@@ -20,7 +20,7 @@ from reminder_client.ui.main_window import MainWindow
 from reminder_client.ui.tray_controller import TrayController
 
 
-APP_NAME = 'Windows ???????'
+APP_NAME = 'Windows 定时提醒客户端'
 APP_ORGANIZATION = 'Reminder Client'
 APP_DB_DIR_NAME = 'ReminderClient'
 APP_DB_FILE_NAME = 'reminder-client.db'
