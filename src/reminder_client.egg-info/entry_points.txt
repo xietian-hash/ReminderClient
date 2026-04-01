@@ -1,0 +1,2 @@
+[console_scripts]
+reminder-client = reminder_client.main:main

@@ -1,0 +1,8 @@
+PySide6<7,>=6.7
+
+[build]
+pyinstaller<7,>=6.0
+
+[dev]
+pytest<9,>=8.0
+pytest-qt<5,>=4.4

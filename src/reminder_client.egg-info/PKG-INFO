@@ -1,0 +1,80 @@
+Metadata-Version: 2.4
+Name: reminder-client
+Version: 0.1.0
+Summary: Windows 定时提醒客户端
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: PySide6<7,>=6.7
+Provides-Extra: dev
+Requires-Dist: pytest<9,>=8.0; extra == "dev"
+Requires-Dist: pytest-qt<5,>=4.4; extra == "dev"
+Provides-Extra: build
+Requires-Dist: pyinstaller<7,>=6.0; extra == "build"
+
+# Windows 定时提醒客户端
+
+基于 `PySide6 + Python` 的 Windows 桌面定时提醒客户端，面向久坐提醒、滴眼药水提醒等周期性健康场景。
+
+## 当前已实现
+
+- 提醒领域模型与本地 `SQLite` 存储
+- 提醒开始、暂停、重置、删除与批量控制服务
+- 提醒轮转状态机：提醒结束自动进入休息，休息结束自动进入下一轮
+- 自定义提醒名称、提醒间隔、休息间隔、休息提醒
+- 主窗口列表、新建/编辑提醒弹窗、系统设置弹窗
+- Qt 原生托盘通知与 Qt 多媒体音频播放
+- 托盘退出前统一重置全部提醒并保存配置
+- 托盘菜单、Windows 开机自启、自动提醒设置
+- `PyInstaller` 单目录打包脚本
+
+## 环境要求
+
+- Python 3.11 或更高版本
+- Windows 系统
+
+## 安装依赖
+
+开发与测试：
+
+```bash
+python -m pip install -e .[dev]
+```
+
+打包：
+
+```bash
+python -m pip install -e .[build]
+```
+
+## 本地运行
+
+```bash
+python -m reminder_client.main
+```
+
+## 运行测试
+
+```bash
+python -m pytest tests -q
+python -m compileall src
+```
+
+## 打包说明
+
+安装 `PyInstaller` 后，在项目根目录执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 -Clean
+```
+
+打包完成后产物位于：
+
+```text
+dist\ReminderClient\
+```
+
+说明：
+
+- 目录版产物是一个文件夹，里面包含 `ReminderClient.exe` 和运行依赖
+- `SQLite` 数据库不会预置打包，程序首次运行后会在 `LOCALAPPDATA\ReminderClient\reminder-client.db` 自动创建
+- 用户自定义音频不会打包进应用，只保存外部文件路径
