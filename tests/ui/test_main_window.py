@@ -5,6 +5,7 @@ from PySide6.QtWidgets import QMessageBox, QPushButton
 from reminder_client.domain.enums import ReminderPhase, ReminderRuntimeState
 from reminder_client.domain.models import Reminder
 from reminder_client.ui.main_window import MainWindow
+from reminder_client.ui.vision_log_dialog import VisionLogDialog
 from reminder_client.ui.tray_controller import TrayController
 
 
@@ -85,6 +86,11 @@ class FakeAutostartService:
         raise AssertionError('本测试不需要调用开机自启')
 
 
+class FakeVisionLogRepository:
+    def list_all(self):
+        return []
+
+
 def test_main_window_shows_toolbar_buttons(qtbot) -> None:
     window = MainWindow(FakeReminderService([]))
     qtbot.addWidget(window)
@@ -93,7 +99,25 @@ def test_main_window_shows_toolbar_buttons(qtbot) -> None:
     assert window.start_all_button.text() == '全部开始'
     assert window.pause_all_button.text() == '全部暂停'
     assert window.reset_all_button.text() == '全部重置'
+    assert window.logs_button.text() == '日志'
     assert window.settings_button.text() == '设置'
+
+
+def test_main_window_logs_button_opens_dialog(qtbot, monkeypatch) -> None:
+    window = MainWindow(FakeReminderService([]), vision_log_repository=FakeVisionLogRepository())
+    qtbot.addWidget(window)
+
+    opened = {'value': False}
+
+    def fake_exec(self):
+        opened['value'] = True
+        return 0
+
+    monkeypatch.setattr(VisionLogDialog, 'exec', fake_exec)
+
+    window.show_logs_dialog()
+
+    assert opened['value'] is True
 
 
 def test_main_window_loads_reminder_rows(qtbot) -> None:

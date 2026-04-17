@@ -22,9 +22,10 @@ class ReminderRepository:
                     """
                     INSERT INTO reminders (
                         id, name, reminder_interval_minutes, break_interval_minutes,
-                        music_path, enabled, runtime_state, current_phase,
+                        music_path, visual_reminder_enabled, visual_music_path,
+                        enabled, runtime_state, current_phase,
                         remaining_seconds, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     self._to_row(reminder),
                 )
@@ -41,7 +42,8 @@ class ReminderRepository:
                     """
                     UPDATE reminders
                     SET name = ?, reminder_interval_minutes = ?, break_interval_minutes = ?,
-                        music_path = ?, enabled = ?, runtime_state = ?, current_phase = ?,
+                        music_path = ?, visual_reminder_enabled = ?, visual_music_path = ?,
+                        enabled = ?, runtime_state = ?, current_phase = ?,
                         remaining_seconds = ?, updated_at = ?
                     WHERE id = ?
                     """,
@@ -50,6 +52,8 @@ class ReminderRepository:
                         reminder.reminder_interval_minutes,
                         reminder.break_interval_minutes,
                         reminder.music_path,
+                        int(reminder.visual_reminder_enabled),
+                        reminder.visual_music_path,
                         int(reminder.enabled),
                         reminder.runtime_state.value,
                         reminder.current_phase.value,
@@ -95,6 +99,8 @@ class ReminderRepository:
             reminder.reminder_interval_minutes,
             reminder.break_interval_minutes,
             reminder.music_path,
+            int(reminder.visual_reminder_enabled),
+            reminder.visual_music_path,
             int(reminder.enabled),
             reminder.runtime_state.value,
             reminder.current_phase.value,
@@ -110,6 +116,8 @@ class ReminderRepository:
             reminder_interval_minutes=row["reminder_interval_minutes"],
             break_interval_minutes=row["break_interval_minutes"],
             music_path=row["music_path"],
+            visual_reminder_enabled=bool(row["visual_reminder_enabled"]),
+            visual_music_path=row["visual_music_path"],
             enabled=bool(row["enabled"]),
             runtime_state=ReminderRuntimeState(row["runtime_state"]),
             current_phase=ReminderPhase(row["current_phase"]),

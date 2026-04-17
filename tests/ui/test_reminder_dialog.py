@@ -56,12 +56,16 @@ def test_reminder_dialog_creates_reminder(qtbot, tmp_path) -> None:
     dialog.name_input.setText('久坐提醒')
     dialog.reminder_interval_input.setValue(45)
     dialog.break_interval_input.setValue(5)
+    dialog.visual_enabled_checkbox.setChecked(True)
+    dialog.visual_music_path_input.setText(r'C:\audio\visual.mp3')
     qtbot.mouseClick(dialog.save_button, Qt.LeftButton)
 
     saved = repository.list_all()
     assert dialog.result() == int(QDialog.DialogCode.Accepted)
     assert len(saved) == 1
     assert saved[0].name == '久坐提醒'
+    assert saved[0].visual_reminder_enabled is True
+    assert saved[0].visual_music_path == r'C:\audio\visual.mp3'
 
 
 def test_edit_running_reminder_resets_to_not_started(qtbot, tmp_path) -> None:
@@ -81,6 +85,8 @@ def test_edit_running_reminder_resets_to_not_started(qtbot, tmp_path) -> None:
     dialog.name_input.setText('滴眼药水')
     dialog.reminder_interval_input.setValue(120)
     dialog.break_interval_input.setValue(1)
+    dialog.visual_enabled_checkbox.setChecked(True)
+    dialog.visual_music_path_input.setText(r'C:\audio\visual.mp3')
     qtbot.mouseClick(dialog.save_button, Qt.LeftButton)
 
     updated = repository.get_by_id(reminder.id)
@@ -88,6 +94,38 @@ def test_edit_running_reminder_resets_to_not_started(qtbot, tmp_path) -> None:
     assert updated.name == '滴眼药水'
     assert updated.runtime_state == ReminderRuntimeState.NOT_STARTED
     assert updated.remaining_seconds == 120 * 60
+    assert updated.visual_reminder_enabled is True
+    assert updated.visual_music_path == r'C:\audio\visual.mp3'
+
+
+def test_visual_test_button_invokes_service(qtbot, tmp_path, monkeypatch) -> None:
+    service, _, _ = build_reminder_service(tmp_path)
+    calls: list[dict[str, object]] = []
+
+    def fake_test_visual_decision(payload: dict[str, object]) -> None:
+        calls.append(payload)
+
+    monkeypatch.setattr(service, 'test_visual_decision', fake_test_visual_decision, raising=False)
+    dialog = ReminderDialog(service)
+    qtbot.addWidget(dialog)
+
+    dialog.name_input.setText('久坐提醒')
+    dialog.visual_enabled_checkbox.setChecked(True)
+    qtbot.mouseClick(dialog.visual_test_button, Qt.LeftButton)
+
+    assert len(calls) == 1
+    assert calls[0]['visual_reminder_enabled'] is True
+
+
+def test_enabled_checkbox_precedes_visual_test_button(qtbot, tmp_path) -> None:
+    service, _, _ = build_reminder_service(tmp_path)
+    dialog = ReminderDialog(service)
+    qtbot.addWidget(dialog)
+
+    enabled_row, _ = dialog.form_layout.getWidgetPosition(dialog.enabled_checkbox)
+    visual_test_row, _ = dialog.form_layout.getWidgetPosition(dialog.visual_test_button)
+
+    assert enabled_row < visual_test_row
 
 
 def test_settings_dialog_updates_autostart(qtbot, tmp_path) -> None:
@@ -98,10 +136,16 @@ def test_settings_dialog_updates_autostart(qtbot, tmp_path) -> None:
     qtbot.addWidget(dialog)
 
     dialog.autostart_checkbox.setChecked(True)
+    dialog.auto_remind_checkbox.setChecked(True)
+    dialog.ark_base_url_input.setText('https://ark.cn-beijing.volces.com/api/v3/responses')
+    dialog.ark_api_key_input.setText('test-key')
+    dialog.ark_model_name_input.setText('doubao-seed-2-0-mini-260215')
     qtbot.mouseClick(dialog.save_button, Qt.LeftButton)
 
     settings = settings_repository.get()
     assert dialog.result() == int(QDialog.DialogCode.Accepted)
     assert settings.launch_at_startup is True
+    assert settings.auto_remind_on_launch is True
+    assert settings.ark_api_key == 'test-key'
     assert autostart_service.enabled is True
     assert autostart_service.enable_calls == 1

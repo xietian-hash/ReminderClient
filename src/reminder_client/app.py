@@ -9,12 +9,16 @@ from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtWidgets import QApplication
 
 from reminder_client.resources import load_app_icon
+from reminder_client.services.ark_vision_client import ArkVisionClient
 from reminder_client.services.audio_service import AudioService
 from reminder_client.services.autostart_service import AutostartService
 from reminder_client.services.notification_service import QtTrayNotificationService
 from reminder_client.services.reminder_service import ReminderService
+from reminder_client.services.camera_service import CameraService
+from reminder_client.services.vision_decision_service import VisionDecisionService
 from reminder_client.storage.database import Database
 from reminder_client.storage.reminder_repository import ReminderRepository
+from reminder_client.storage.vision_log_repository import VisionLogRepository
 from reminder_client.storage.settings_repository import SettingsRepository
 from reminder_client.ui.main_window import MainWindow
 from reminder_client.ui.tray_controller import TrayController
@@ -51,19 +55,34 @@ def build_main_window() -> MainWindow:
     database.initialize()
     reminder_repository = ReminderRepository(database)
     settings_repository = SettingsRepository(database)
+    vision_log_repository = VisionLogRepository(database)
     player = QMediaPlayer()
     audio_output = QAudioOutput()
     notification_service = QtTrayNotificationService()
+    audio_service = AudioService(
+        player=player,
+        audio_output=audio_output,
+        beep_callback=QApplication.beep,
+    )
+    vision_decision_service = VisionDecisionService(
+        camera_service=CameraService(),
+        ark_client=ArkVisionClient(),
+        log_repository=vision_log_repository,
+        audio_service=audio_service,
+    )
     reminder_service = ReminderService(
         repository=reminder_repository,
         notification_service=notification_service,
-        audio_service=AudioService(player=player, audio_output=audio_output, beep_callback=QApplication.beep),
+        audio_service=audio_service,
+        settings_repository=settings_repository,
+        vision_decision_service=vision_decision_service,
     )
     autostart_service = AutostartService('ReminderClient', resolve_launch_command())
     window = MainWindow(
         reminder_service,
         settings_repository=settings_repository,
         autostart_service=autostart_service,
+        vision_log_repository=vision_log_repository,
     )
     app_icon = load_app_icon()
     window.setWindowIcon(app_icon)

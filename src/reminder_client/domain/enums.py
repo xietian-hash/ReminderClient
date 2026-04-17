@@ -13,3 +13,8 @@ class ReminderPhase(StrEnum):
     REMINDER = "reminder"
     BREAK = "break"
 
+
+class VisionDecisionResult(StrEnum):
+    USER_LEFT_DESK = "用户已离开电脑前"
+    USER_STAYING = "用户未离开电脑前"
+    FAILED = "识别失败"

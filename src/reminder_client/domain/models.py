@@ -5,7 +5,11 @@ from datetime import datetime
 from typing import Iterable
 from uuid import uuid4
 
-from reminder_client.domain.enums import ReminderPhase, ReminderRuntimeState
+from reminder_client.domain.enums import (
+    ReminderPhase,
+    ReminderRuntimeState,
+    VisionDecisionResult,
+)
 
 
 def normalize_reminder_name(name: str) -> str:
@@ -34,6 +38,8 @@ class Reminder:
     reminder_interval_minutes: int
     break_interval_minutes: int
     music_path: str | None = None
+    visual_reminder_enabled: bool = False
+    visual_music_path: str | None = None
     enabled: bool = True
     runtime_state: ReminderRuntimeState = ReminderRuntimeState.NOT_STARTED
     current_phase: ReminderPhase = ReminderPhase.REMINDER
@@ -67,4 +73,22 @@ class Reminder:
 class AppSettings:
     launch_at_startup: bool = False
     auto_remind_on_launch: bool = False
+    ark_base_url: str = 'https://ark.cn-beijing.volces.com/api/v3/responses'
+    ark_api_key: str = ''
+    ark_model_name: str = 'doubao-seed-2-0-mini-260215'
     updated_at: datetime = field(default_factory=_now)
+
+
+@dataclass(slots=True)
+class VisionDecisionLog:
+    reminder_id: str
+    reminder_name: str
+    request_url: str
+    model_name: str
+    result: VisionDecisionResult
+    raw_response_text: str | None = None
+    error_message: str | None = None
+    captured_at: datetime = field(default_factory=_now)
+    requested_at: datetime = field(default_factory=_now)
+    completed_at: datetime = field(default_factory=_now)
+    id: str = field(default_factory=lambda: str(uuid4()))

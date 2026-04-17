@@ -4,9 +4,11 @@ import sqlite3
 
 import pytest
 
-from reminder_client.domain.models import AppSettings, Reminder
+from reminder_client.domain.enums import VisionDecisionResult
+from reminder_client.domain.models import AppSettings, Reminder, VisionDecisionLog
 from reminder_client.storage.database import Database
 from reminder_client.storage.reminder_repository import ReminderRepository
+from reminder_client.storage.vision_log_repository import VisionLogRepository
 from reminder_client.storage.settings_repository import SettingsRepository
 
 
@@ -73,6 +75,44 @@ def test_save_and_load_app_settings(database: Database) -> None:
 
     assert settings.launch_at_startup is True
     assert settings.auto_remind_on_launch is True
+
+
+def test_save_and_load_vision_config(database: Database) -> None:
+    repository = SettingsRepository(database)
+    repository.save(
+        AppSettings(
+            launch_at_startup=True,
+            auto_remind_on_launch=True,
+            ark_base_url="https://ark.cn-beijing.volces.com/api/v3/responses",
+            ark_api_key="test-key",
+            ark_model_name="doubao-seed-2-0-mini-260215",
+        )
+    )
+
+    settings = repository.get()
+
+    assert settings.ark_base_url == "https://ark.cn-beijing.volces.com/api/v3/responses"
+    assert settings.ark_api_key == "test-key"
+    assert settings.ark_model_name == "doubao-seed-2-0-mini-260215"
+
+
+def test_vision_log_repository_writes_model_call(database: Database) -> None:
+    repository = VisionLogRepository(database)
+    log = VisionDecisionLog(
+        reminder_id="reminder-id",
+        reminder_name="涔呭潗鎻愰啋",
+        request_url="https://ark.cn-beijing.volces.com/api/v3/responses",
+        model_name="doubao-seed-2-0-mini-260215",
+        result=VisionDecisionResult.USER_LEFT_DESK,
+        raw_response_text='{"output":"用户已离开电脑前"}',
+    )
+
+    repository.add(log)
+
+    saved_logs = repository.list_all()
+
+    assert len(saved_logs) == 1
+    assert saved_logs[0].result == VisionDecisionResult.USER_LEFT_DESK
 
 
 def test_get_app_settings_defaults_to_auto_remind_disabled(database: Database) -> None:

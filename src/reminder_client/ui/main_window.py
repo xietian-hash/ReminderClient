@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 
 from reminder_client.domain.enums import ReminderPhase, ReminderRuntimeState
 from reminder_client.ui.reminder_dialog import ReminderDialog
+from reminder_client.ui.vision_log_dialog import VisionLogDialog
 from reminder_client.ui.settings_dialog import SettingsDialog
 
 
@@ -36,12 +37,14 @@ class MainWindow(QMainWindow):
         reminder_service,
         settings_repository=None,
         autostart_service=None,
+        vision_log_repository=None,
         tick_interval_ms: int = 1000,
     ) -> None:
         super().__init__()
         self.reminder_service = reminder_service
         self.settings_repository = settings_repository
         self.autostart_service = autostart_service
+        self.vision_log_repository = vision_log_repository
         self.tray_controller = None
         self._force_exit = False
         self._tick_interval_ms = tick_interval_ms
@@ -67,6 +70,8 @@ class MainWindow(QMainWindow):
         self.pause_all_button.setObjectName('pauseAllButton')
         self.reset_all_button = QPushButton('全部重置')
         self.reset_all_button.setObjectName('resetAllButton')
+        self.logs_button = QPushButton('日志')
+        self.logs_button.setObjectName('logsButton')
         self.settings_button = QPushButton('设置')
         self.settings_button.setObjectName('settingsButton')
 
@@ -74,6 +79,7 @@ class MainWindow(QMainWindow):
         self.start_all_button.clicked.connect(self.handle_start_all)
         self.pause_all_button.clicked.connect(self.handle_pause_all)
         self.reset_all_button.clicked.connect(self.handle_reset_all)
+        self.logs_button.clicked.connect(self.show_logs_dialog)
         self.settings_button.clicked.connect(self.show_settings_dialog)
 
         toolbar_layout.addWidget(self.new_button)
@@ -81,6 +87,7 @@ class MainWindow(QMainWindow):
         toolbar_layout.addWidget(self.pause_all_button)
         toolbar_layout.addWidget(self.reset_all_button)
         toolbar_layout.addStretch(1)
+        toolbar_layout.addWidget(self.logs_button)
         toolbar_layout.addWidget(self.settings_button)
 
         self.table = QTableWidget(0, 6, self)
@@ -178,6 +185,13 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, '提示', '当前未配置系统设置服务。')
             return
         dialog = SettingsDialog(self.settings_repository, self.autostart_service, parent=self)
+        dialog.exec()
+
+    def show_logs_dialog(self) -> None:
+        if self.vision_log_repository is None:
+            QMessageBox.information(self, '提示', '当前没有可用的视觉日志服务。')
+            return
+        dialog = VisionLogDialog(self.vision_log_repository, parent=self)
         dialog.exec()
 
     def handle_toggle_reminder(self, reminder_id: str, runtime_state: ReminderRuntimeState) -> None:

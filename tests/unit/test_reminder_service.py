@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from reminder_client.domain.enums import ReminderPhase, ReminderRuntimeState
-from reminder_client.domain.models import Reminder, ensure_unique_name, normalize_reminder_name
+from reminder_client.domain.enums import ReminderPhase, ReminderRuntimeState, VisionDecisionResult
+from reminder_client.domain.models import AppSettings, Reminder, ensure_unique_name, normalize_reminder_name
 from reminder_client.services.audio_service import AudioService
 from reminder_client.services.notification_service import NotificationService
 from reminder_client.services.reminder_service import ReminderService
@@ -259,3 +259,113 @@ def test_delete_reminder_raises_for_missing_id(reminder_service) -> None:
 
     with pytest.raises(KeyError):
         service.delete_reminder('missing-id')
+
+
+class FakeVisualDecisionScheduler:
+    def __init__(self) -> None:
+        self.scheduled: list[tuple[str, int]] = []
+        self.cancelled: list[str] = []
+
+    def schedule(self, reminder_id: str, delay_ms: int, callback) -> None:
+        self.scheduled.append((reminder_id, delay_ms))
+
+    def cancel(self, reminder_id: str) -> None:
+        self.cancelled.append(reminder_id)
+
+
+class FakeSettingsRepository:
+    def __init__(self, settings: AppSettings | None = None) -> None:
+        self.settings = settings or AppSettings()
+
+    def get(self) -> AppSettings:
+        return self.settings
+
+
+class FakeVisionDecisionService:
+    def __init__(self, result=VisionDecisionResult.USER_STAYING) -> None:
+        self.result = result
+        self.calls: list[tuple[str, str]] = []
+
+    def evaluate(self, reminder: Reminder, settings: AppSettings, *, play_audio: bool = True):
+        self.calls.append((reminder.id, settings.ark_base_url))
+        return self.result
+
+
+@pytest.fixture()
+def visual_reminder_service(tmp_path):
+    database = Database(tmp_path / 'visual-reminder.db')
+    database.initialize()
+    repository = ReminderRepository(database)
+    scheduler = FakeVisualDecisionScheduler()
+    settings_repository = FakeSettingsRepository(
+        AppSettings(
+            ark_base_url='https://ark.cn-beijing.volces.com/api/v3/responses',
+            ark_api_key='test-key',
+            ark_model_name='doubao-seed-2-0-mini-260215',
+        )
+    )
+    vision_service = FakeVisionDecisionService()
+    audio_service = DummyAudioService()
+    service = ReminderService(
+        repository=repository,
+        settings_repository=settings_repository,
+        vision_decision_service=vision_service,
+        visual_decision_scheduler=scheduler,
+        audio_service=audio_service,
+    )
+    return service, repository, scheduler, settings_repository, vision_service, audio_service
+
+
+def test_tick_schedules_visual_decision_when_enabled(visual_reminder_service) -> None:
+    service, repository, scheduler, _, _, _ = visual_reminder_service
+    reminder = repository.add(
+        Reminder(
+            name='视觉提醒',
+            reminder_interval_minutes=1,
+            break_interval_minutes=5,
+            runtime_state=ReminderRuntimeState.RUNNING,
+            remaining_seconds=1,
+            visual_reminder_enabled=True,
+        )
+    )
+
+    service.tick(reminder.id)
+
+    assert scheduler.scheduled == [(reminder.id, 60_000)]
+
+
+def test_reset_cancels_pending_visual_decision(visual_reminder_service) -> None:
+    service, repository, scheduler, _, _, _ = visual_reminder_service
+    reminder = repository.add(
+        Reminder(
+            name='视觉提醒',
+            reminder_interval_minutes=1,
+            break_interval_minutes=5,
+            runtime_state=ReminderRuntimeState.RUNNING,
+            remaining_seconds=1,
+            visual_reminder_enabled=True,
+        )
+    )
+
+    service.tick(reminder.id)
+    service.reset(reminder.id)
+
+    assert reminder.id in scheduler.cancelled
+
+
+def test_test_visual_decision_uses_current_settings(visual_reminder_service) -> None:
+    service, _, _, _, vision_service, _ = visual_reminder_service
+
+    result = service.test_visual_decision(
+        {
+            'name': '视觉提醒',
+            'reminder_interval_minutes': 1,
+            'break_interval_minutes': 5,
+            'visual_reminder_enabled': True,
+            'visual_music_path': r'C:\audio\visual.mp3',
+            'enabled': True,
+        }
+    )
+
+    assert result == VisionDecisionResult.USER_STAYING
+    assert len(vision_service.calls) == 1

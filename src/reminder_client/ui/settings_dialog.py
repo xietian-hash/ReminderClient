@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QCheckBox, QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
+from PySide6.QtWidgets import QCheckBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
 
 from reminder_client.domain.models import AppSettings
 
@@ -11,17 +11,18 @@ class SettingsDialog(QDialog):
         self.settings_repository = settings_repository
         self.autostart_service = autostart_service
         self.setWindowTitle('系统设置')
-        self.resize(360, 240)
+        self.resize(520, 360)
         self._build_ui()
         self._load_settings()
 
     def _build_ui(self) -> None:
         root_layout = QVBoxLayout(self)
+        form_layout = QFormLayout()
 
         self.autostart_checkbox = QCheckBox('开机自启', self)
         self.autostart_checkbox.setObjectName('autostartCheckbox')
         self.autostart_description_label = QLabel(
-            '开启后程序随 Windows 启动，并默认最小化到托盘。',
+            '启用后程序随 Windows 启动，并默认最小化到托盘。',
             self,
         )
         self.autostart_description_label.setWordWrap(True)
@@ -29,10 +30,24 @@ class SettingsDialog(QDialog):
         self.auto_remind_checkbox = QCheckBox('自动提醒', self)
         self.auto_remind_checkbox.setObjectName('autoRemindCheckbox')
         self.auto_remind_description_label = QLabel(
-            '启动后自动开始全部提醒并缩到托盘',
+            '启动后自动开始全部提醒并缩到托盘。',
             self,
         )
         self.auto_remind_description_label.setWordWrap(True)
+
+        self.ark_base_url_input = QLineEdit(self)
+        self.ark_base_url_input.setObjectName('arkBaseUrlInput')
+
+        self.ark_api_key_input = QLineEdit(self)
+        self.ark_api_key_input.setObjectName('arkApiKeyInput')
+        self.ark_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+
+        self.ark_model_name_input = QLineEdit(self)
+        self.ark_model_name_input.setObjectName('arkModelNameInput')
+
+        form_layout.addRow('Ark 调用地址', self.ark_base_url_input)
+        form_layout.addRow('Ark API Key', self.ark_api_key_input)
+        form_layout.addRow('Ark 模型名', self.ark_model_name_input)
 
         self.error_label = QLabel('', self)
         self.error_label.setObjectName('settingsErrorLabel')
@@ -54,6 +69,8 @@ class SettingsDialog(QDialog):
         root_layout.addSpacing(8)
         root_layout.addWidget(self.auto_remind_checkbox)
         root_layout.addWidget(self.auto_remind_description_label)
+        root_layout.addSpacing(8)
+        root_layout.addLayout(form_layout)
         root_layout.addWidget(self.error_label)
         root_layout.addStretch(1)
         root_layout.addLayout(action_layout)
@@ -62,6 +79,9 @@ class SettingsDialog(QDialog):
         settings = self.settings_repository.get()
         self.autostart_checkbox.setChecked(settings.launch_at_startup)
         self.auto_remind_checkbox.setChecked(settings.auto_remind_on_launch)
+        self.ark_base_url_input.setText(settings.ark_base_url)
+        self.ark_api_key_input.setText(settings.ark_api_key)
+        self.ark_model_name_input.setText(settings.ark_model_name)
 
     def _save(self) -> None:
         self.error_label.setText('')
@@ -72,6 +92,9 @@ class SettingsDialog(QDialog):
                 AppSettings(
                     launch_at_startup=launch_at_startup,
                     auto_remind_on_launch=auto_remind_on_launch,
+                    ark_base_url=self.ark_base_url_input.text().strip(),
+                    ark_api_key=self.ark_api_key_input.text().strip(),
+                    ark_model_name=self.ark_model_name_input.text().strip(),
                 )
             )
             if launch_at_startup:
