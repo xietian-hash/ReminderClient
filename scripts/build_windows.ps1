@@ -21,6 +21,7 @@ python -m PyInstaller `
     --icon assets\app_icon.ico `
     --add-data "assets\app_icon.ico;assets" `
     --add-data "assets\app_icon.png;assets" `
+    --add-data "assets\wechat_qr.jpg;assets" `
     --paths src `
     --hidden-import PySide6.QtCore `
     --hidden-import PySide6.QtGui `

@@ -45,6 +45,9 @@ class Reminder:
     current_phase: ReminderPhase = ReminderPhase.REMINDER
     remaining_seconds: int | None = None
     dnd_paused: bool = False
+    notification_enabled: bool = False
+    audio_enabled: bool = False
+    lock_screen_enabled: bool = False
     id: str = field(default_factory=lambda: str(uuid4()))
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)

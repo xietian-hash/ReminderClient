@@ -22,7 +22,7 @@ class ReminderDialog(QDialog):
         self.reminder_id = reminder_id
         self.saved_reminder = None
         self.setWindowTitle('编辑提醒' if reminder_id else '新建提醒')
-        self.resize(520, 360)
+        self.resize(520, 420)
         self._build_ui()
         if reminder_id is not None:
             self._load_existing_data()
@@ -47,16 +47,38 @@ class ReminderDialog(QDialog):
         self.break_interval_input.setValue(5)
         self.break_interval_input.setSuffix(' 分钟')
 
+        # 提醒方式复选框
+        self.notification_checkbox = QCheckBox('通知提醒', self)
+        self.notification_checkbox.setObjectName('notificationCheckbox')
+
+        self.audio_checkbox = QCheckBox('音频提醒', self)
+        self.audio_checkbox.setObjectName('audioCheckbox')
+        self.audio_checkbox.toggled.connect(self._on_audio_toggled)
+
+        self.lock_screen_checkbox = QCheckBox('锁屏提醒', self)
+        self.lock_screen_checkbox.setObjectName('lockScreenCheckbox')
+
+        method_row = QWidget(self)
+        method_layout = QHBoxLayout(method_row)
+        method_layout.setContentsMargins(0, 0, 0, 0)
+        method_layout.addWidget(self.notification_checkbox)
+        method_layout.addWidget(self.audio_checkbox)
+        method_layout.addWidget(self.lock_screen_checkbox)
+        method_layout.addStretch(1)
+
+        # 音频文件选择器（audio_enabled 控制显隐）
         self.music_path_input, self.music_browse_button, self.music_clear_button = self._create_file_picker(
             title='选择定时提醒音频',
             browse_text='选择文件',
             clear_text='清空',
             object_prefix='music',
         )
-
-        self.enabled_checkbox = QCheckBox('启用提醒', self)
-        self.enabled_checkbox.setObjectName('enabledCheckbox')
-        self.enabled_checkbox.setChecked(True)
+        self._audio_row_widget = self._build_picker_row(
+            self.music_path_input,
+            self.music_browse_button,
+            self.music_clear_button,
+        )
+        self._audio_row_label = QLabel('定时提醒音频', self)
 
         self.visual_enabled_checkbox = QCheckBox('启用视觉提醒', self)
         self.visual_enabled_checkbox.setObjectName('visualEnabledCheckbox')
@@ -77,12 +99,8 @@ class ReminderDialog(QDialog):
         form_layout.addRow('名称', self.name_input)
         form_layout.addRow('定时提醒间隔', self.reminder_interval_input)
         form_layout.addRow('休息间隔', self.break_interval_input)
-        form_layout.addRow('定时提醒音频', self._build_picker_row(
-            self.music_path_input,
-            self.music_browse_button,
-            self.music_clear_button,
-        ))
-        form_layout.addRow('', self.enabled_checkbox)
+        form_layout.addRow('提醒方式', method_row)
+        form_layout.addRow(self._audio_row_label, self._audio_row_widget)
         form_layout.addRow('视觉提醒音频', self._build_picker_row(
             self.visual_music_path_input,
             self.visual_music_browse_button,
@@ -90,6 +108,9 @@ class ReminderDialog(QDialog):
         ))
         form_layout.addRow('', self.visual_enabled_checkbox)
         form_layout.addRow('', self.visual_test_button)
+
+        # 初始隐藏音频行
+        self._set_audio_row_visible(False)
 
         self.error_label = QLabel('', self)
         self.error_label.setObjectName('errorLabel')
@@ -109,6 +130,13 @@ class ReminderDialog(QDialog):
         root_layout.addLayout(form_layout)
         root_layout.addWidget(self.error_label)
         root_layout.addLayout(action_layout)
+
+    def _set_audio_row_visible(self, visible: bool) -> None:
+        self._audio_row_widget.setVisible(visible)
+        self._audio_row_label.setVisible(visible)
+
+    def _on_audio_toggled(self, checked: bool) -> None:
+        self._set_audio_row_visible(checked)
 
     def _create_file_picker(
         self,
@@ -152,10 +180,12 @@ class ReminderDialog(QDialog):
         self.name_input.setText(reminder.name)
         self.reminder_interval_input.setValue(reminder.reminder_interval_minutes)
         self.break_interval_input.setValue(reminder.break_interval_minutes)
+        self.notification_checkbox.setChecked(reminder.notification_enabled)
+        self.audio_checkbox.setChecked(reminder.audio_enabled)
+        self.lock_screen_checkbox.setChecked(reminder.lock_screen_enabled)
         self.music_path_input.setText(reminder.music_path or '')
         self.visual_enabled_checkbox.setChecked(reminder.visual_reminder_enabled)
         self.visual_music_path_input.setText(reminder.visual_music_path or '')
-        self.enabled_checkbox.setChecked(reminder.enabled)
 
     def _choose_music_file(self, path_input: QLineEdit, title: str) -> None:
         file_path, _ = QFileDialog.getOpenFileName(
@@ -172,10 +202,13 @@ class ReminderDialog(QDialog):
             'name': self.name_input.text(),
             'reminder_interval_minutes': self.reminder_interval_input.value(),
             'break_interval_minutes': self.break_interval_input.value(),
+            'notification_enabled': self.notification_checkbox.isChecked(),
+            'audio_enabled': self.audio_checkbox.isChecked(),
+            'lock_screen_enabled': self.lock_screen_checkbox.isChecked(),
             'music_path': self.music_path_input.text().strip() or None,
             'visual_reminder_enabled': self.visual_enabled_checkbox.isChecked(),
             'visual_music_path': self.visual_music_path_input.text().strip() or None,
-            'enabled': self.enabled_checkbox.isChecked(),
+            'enabled': True,
         }
 
     def _test_visual_reminder(self) -> None:

@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from reminder_client.domain.enums import ReminderPhase, ReminderRuntimeState
 from reminder_client.services.dnd_service import DndService
+from reminder_client.ui.about_dialog import AboutDialog
 from reminder_client.ui.reminder_dialog import ReminderDialog
 from reminder_client.ui.vision_log_dialog import VisionLogDialog
 from reminder_client.ui.settings_dialog import SettingsDialog
@@ -75,6 +76,8 @@ class MainWindow(QMainWindow):
         self.pause_all_button.setObjectName('pauseAllButton')
         self.reset_all_button = QPushButton('全部重置')
         self.reset_all_button.setObjectName('resetAllButton')
+        self.about_button = QPushButton('关于')
+        self.about_button.setObjectName('aboutButton')
         self.logs_button = QPushButton('日志')
         self.logs_button.setObjectName('logsButton')
         self.settings_button = QPushButton('设置')
@@ -84,6 +87,7 @@ class MainWindow(QMainWindow):
         self.start_all_button.clicked.connect(self.handle_start_all)
         self.pause_all_button.clicked.connect(self.handle_pause_all)
         self.reset_all_button.clicked.connect(self.handle_reset_all)
+        self.about_button.clicked.connect(self.show_about_dialog)
         self.logs_button.clicked.connect(self.show_logs_dialog)
         self.settings_button.clicked.connect(self.show_settings_dialog)
 
@@ -92,6 +96,7 @@ class MainWindow(QMainWindow):
         toolbar_layout.addWidget(self.pause_all_button)
         toolbar_layout.addWidget(self.reset_all_button)
         toolbar_layout.addStretch(1)
+        toolbar_layout.addWidget(self.about_button)
         toolbar_layout.addWidget(self.logs_button)
         toolbar_layout.addWidget(self.settings_button)
 
@@ -238,6 +243,10 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, '提示', '当前未配置系统设置服务。')
             return
         dialog = SettingsDialog(self.settings_repository, self.autostart_service, parent=self)
+        dialog.exec()
+
+    def show_about_dialog(self) -> None:
+        dialog = AboutDialog(parent=self)
         dialog.exec()
 
     def show_logs_dialog(self) -> None:

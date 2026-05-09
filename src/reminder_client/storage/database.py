@@ -125,6 +125,24 @@ class Database:
                 column_name='dnd_paused',
                 column_definition='INTEGER NOT NULL DEFAULT 0',
             )
+            self._ensure_column(
+                connection,
+                table_name='reminders',
+                column_name='notification_enabled',
+                column_definition='INTEGER NOT NULL DEFAULT 1',
+            )
+            self._ensure_column(
+                connection,
+                table_name='reminders',
+                column_name='audio_enabled',
+                column_definition='INTEGER NOT NULL DEFAULT 1',
+            )
+            self._ensure_column(
+                connection,
+                table_name='reminders',
+                column_name='lock_screen_enabled',
+                column_definition='INTEGER NOT NULL DEFAULT 0',
+            )
 
     def _ensure_column(
         self,
