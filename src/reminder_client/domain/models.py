@@ -44,6 +44,7 @@ class Reminder:
     runtime_state: ReminderRuntimeState = ReminderRuntimeState.NOT_STARTED
     current_phase: ReminderPhase = ReminderPhase.REMINDER
     remaining_seconds: int | None = None
+    dnd_paused: bool = False
     id: str = field(default_factory=lambda: str(uuid4()))
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
@@ -76,6 +77,10 @@ class AppSettings:
     ark_base_url: str = 'https://ark.cn-beijing.volces.com/api/v3/responses'
     ark_api_key: str = ''
     ark_model_name: str = 'doubao-seed-2-0-mini-260215'
+    dnd_enabled: bool = False
+    dnd_days: list[int] = field(default_factory=list)
+    dnd_start_time: str = '22:00'
+    dnd_end_time: str = '08:00'
     updated_at: datetime = field(default_factory=_now)
 
 

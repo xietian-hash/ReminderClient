@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from functools import partial
 
 from PySide6.QtCore import QTimer
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from reminder_client.domain.enums import ReminderPhase, ReminderRuntimeState
+from reminder_client.services.dnd_service import DndService
 from reminder_client.ui.reminder_dialog import ReminderDialog
 from reminder_client.ui.vision_log_dialog import VisionLogDialog
 from reminder_client.ui.settings_dialog import SettingsDialog
@@ -48,10 +50,13 @@ class MainWindow(QMainWindow):
         self.tray_controller = None
         self._force_exit = False
         self._tick_interval_ms = tick_interval_ms
+        self._dnd_service = DndService()
+        self._dnd_active: bool = False
         self.setWindowTitle('Windows 定时提醒客户端')
         self.resize(1080, 560)
         self._build_ui()
         self._setup_runtime_timer()
+        self._setup_dnd_timer()
         self.load_reminders()
 
     def set_tray_controller(self, tray_controller) -> None:
@@ -112,6 +117,54 @@ class MainWindow(QMainWindow):
         self.runtime_timer.setInterval(max(10, self._tick_interval_ms))
         self.runtime_timer.timeout.connect(self._handle_runtime_tick)
         self.runtime_timer.start()
+
+    def _setup_dnd_timer(self) -> None:
+        self._dnd_active = self._compute_dnd_active()
+        now = datetime.now()
+        # 计算到下一个5分钟整点边界的秒数（如 22:03 → 等待 120 秒到 22:05）
+        seconds_past = (now.minute % 5) * 60 + now.second
+        seconds_until_next = 300 - seconds_past
+        self._dnd_align_timer = QTimer(self)
+        self._dnd_align_timer.setSingleShot(True)
+        self._dnd_align_timer.timeout.connect(self._on_dnd_boundary_reached)
+        self._dnd_align_timer.start(seconds_until_next * 1000)
+
+    def _on_dnd_boundary_reached(self) -> None:
+        self._check_dnd_transition()
+        self._dnd_periodic_timer = QTimer(self)
+        self._dnd_periodic_timer.setInterval(5 * 60 * 1000)
+        self._dnd_periodic_timer.timeout.connect(self._check_dnd_transition)
+        self._dnd_periodic_timer.start()
+
+    def _compute_dnd_active(self) -> bool:
+        if self.settings_repository is None:
+            return False
+        settings = self.settings_repository.get()
+        return self._dnd_service.is_active(settings)
+
+    def _check_dnd_transition(self) -> None:
+        current_dnd = self._compute_dnd_active()
+        if current_dnd == self._dnd_active:
+            return
+        self._dnd_active = current_dnd
+        if current_dnd:
+            self._handle_enter_dnd()
+        else:
+            self._handle_exit_dnd()
+
+    def _handle_enter_dnd(self) -> None:
+        reminders = self.reminder_service.list_reminders()
+        for reminder in reminders:
+            if reminder.runtime_state == ReminderRuntimeState.RUNNING:
+                self.reminder_service.reset_for_dnd(reminder.id)
+        self.load_reminders()
+
+    def _handle_exit_dnd(self) -> None:
+        reminders = self.reminder_service.list_reminders()
+        for reminder in reminders:
+            if reminder.dnd_paused:
+                self.reminder_service.start_from_dnd(reminder.id)
+        self.load_reminders()
 
     def _handle_runtime_tick(self) -> None:
         reminders = self.reminder_service.list_reminders()

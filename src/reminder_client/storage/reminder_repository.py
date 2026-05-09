@@ -24,8 +24,8 @@ class ReminderRepository:
                         id, name, reminder_interval_minutes, break_interval_minutes,
                         music_path, visual_reminder_enabled, visual_music_path,
                         enabled, runtime_state, current_phase,
-                        remaining_seconds, created_at, updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        remaining_seconds, created_at, updated_at, dnd_paused
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     self._to_row(reminder),
                 )
@@ -44,7 +44,7 @@ class ReminderRepository:
                     SET name = ?, reminder_interval_minutes = ?, break_interval_minutes = ?,
                         music_path = ?, visual_reminder_enabled = ?, visual_music_path = ?,
                         enabled = ?, runtime_state = ?, current_phase = ?,
-                        remaining_seconds = ?, updated_at = ?
+                        remaining_seconds = ?, updated_at = ?, dnd_paused = ?
                     WHERE id = ?
                     """,
                     (
@@ -59,6 +59,7 @@ class ReminderRepository:
                         reminder.current_phase.value,
                         reminder.remaining_seconds,
                         reminder.updated_at.isoformat(),
+                        int(reminder.dnd_paused),
                         reminder.id,
                     ),
                 )
@@ -107,9 +108,11 @@ class ReminderRepository:
             reminder.remaining_seconds,
             reminder.created_at.isoformat(),
             reminder.updated_at.isoformat(),
+            int(reminder.dnd_paused),
         )
 
     def _from_row(self, row: sqlite3.Row) -> Reminder:
+        row_keys = row.keys()
         return Reminder(
             id=row["id"],
             name=row["name"],
@@ -122,6 +125,7 @@ class ReminderRepository:
             runtime_state=ReminderRuntimeState(row["runtime_state"]),
             current_phase=ReminderPhase(row["current_phase"]),
             remaining_seconds=row["remaining_seconds"],
+            dnd_paused=bool(row["dnd_paused"]) if "dnd_paused" in row_keys else False,
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )

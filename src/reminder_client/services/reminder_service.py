@@ -78,6 +78,24 @@ class ReminderService:
         self.cancel_visual_decision(reminder_id)
         reminder = self._get_required(reminder_id)
         reminder.reset_runtime()
+        reminder.dnd_paused = False
+        return self.repository.update(reminder)
+
+    def reset_for_dnd(self, reminder_id: str) -> Reminder:
+        """重置运行中的提醒并标记为由勿扰触发，退出勿扰时可精确恢复。"""
+        self.cancel_visual_decision(reminder_id)
+        reminder = self._get_required(reminder_id)
+        reminder.reset_runtime()
+        reminder.dnd_paused = True
+        return self.repository.update(reminder)
+
+    def start_from_dnd(self, reminder_id: str) -> Reminder:
+        """启动被勿扰标记的提醒并清除标记；若已运行则仅清除标记。"""
+        reminder = self._get_required(reminder_id)
+        reminder.dnd_paused = False
+        if reminder.runtime_state != ReminderRuntimeState.RUNNING:
+            reminder.runtime_state = ReminderRuntimeState.RUNNING
+        reminder.updated_at = datetime.now()
         return self.repository.update(reminder)
 
     def delete_reminder(self, reminder_id: str) -> None:

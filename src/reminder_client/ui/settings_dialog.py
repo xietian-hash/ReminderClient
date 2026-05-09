@@ -1,6 +1,17 @@
 from __future__ import annotations
 
-from PySide6.QtWidgets import QCheckBox, QDialog, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout
+from PySide6.QtCore import QTime
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QFormLayout,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QTimeEdit,
+    QVBoxLayout,
+)
 
 from reminder_client.domain.models import AppSettings
 
@@ -11,7 +22,7 @@ class SettingsDialog(QDialog):
         self.settings_repository = settings_repository
         self.autostart_service = autostart_service
         self.setWindowTitle('系统设置')
-        self.resize(520, 360)
+        self.resize(520, 560)
         self._build_ui()
         self._load_settings()
 
@@ -49,6 +60,40 @@ class SettingsDialog(QDialog):
         form_layout.addRow('Ark API Key', self.ark_api_key_input)
         form_layout.addRow('Ark 模型名', self.ark_model_name_input)
 
+        # 勿扰设置
+        dnd_separator = QLabel('── 勿扰设置 ──────────────────────────', self)
+
+        self.dnd_enabled_checkbox = QCheckBox('启用勿扰', self)
+        self.dnd_enabled_checkbox.setObjectName('dndEnabledCheckbox')
+
+        day_names = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+        self.dnd_day_checkboxes: list[QCheckBox] = []
+        days_layout = QHBoxLayout()
+        for i, name in enumerate(day_names):
+            cb = QCheckBox(name, self)
+            cb.setObjectName(f'dndDayCheckbox{i}')
+            self.dnd_day_checkboxes.append(cb)
+            days_layout.addWidget(cb)
+        days_layout.addStretch(1)
+
+        time_layout = QHBoxLayout()
+        time_layout.addWidget(QLabel('勿扰时间：', self))
+        self.dnd_start_time_edit = QTimeEdit(self)
+        self.dnd_start_time_edit.setObjectName('dndStartTimeEdit')
+        self.dnd_start_time_edit.setDisplayFormat('HH:mm')
+        time_layout.addWidget(self.dnd_start_time_edit)
+        time_layout.addWidget(QLabel('至', self))
+        self.dnd_end_time_edit = QTimeEdit(self)
+        self.dnd_end_time_edit.setObjectName('dndEndTimeEdit')
+        self.dnd_end_time_edit.setDisplayFormat('HH:mm')
+        time_layout.addWidget(self.dnd_end_time_edit)
+        time_layout.addStretch(1)
+
+        dnd_desc_label = QLabel(
+            '在勿扰时段内，运行中的提醒将自动重置；退出后自动恢复。', self
+        )
+        dnd_desc_label.setWordWrap(True)
+
         self.error_label = QLabel('', self)
         self.error_label.setObjectName('settingsErrorLabel')
         self.error_label.setStyleSheet('color: #b42318;')
@@ -71,6 +116,13 @@ class SettingsDialog(QDialog):
         root_layout.addWidget(self.auto_remind_description_label)
         root_layout.addSpacing(8)
         root_layout.addLayout(form_layout)
+        root_layout.addSpacing(8)
+        root_layout.addWidget(dnd_separator)
+        root_layout.addSpacing(4)
+        root_layout.addWidget(self.dnd_enabled_checkbox)
+        root_layout.addLayout(days_layout)
+        root_layout.addLayout(time_layout)
+        root_layout.addWidget(dnd_desc_label)
         root_layout.addWidget(self.error_label)
         root_layout.addStretch(1)
         root_layout.addLayout(action_layout)
@@ -82,12 +134,26 @@ class SettingsDialog(QDialog):
         self.ark_base_url_input.setText(settings.ark_base_url)
         self.ark_api_key_input.setText(settings.ark_api_key)
         self.ark_model_name_input.setText(settings.ark_model_name)
+        self.dnd_enabled_checkbox.setChecked(settings.dnd_enabled)
+        for i, cb in enumerate(self.dnd_day_checkboxes):
+            cb.setChecked(i in settings.dnd_days)
+        try:
+            sh, sm = map(int, settings.dnd_start_time.split(':'))
+            eh, em = map(int, settings.dnd_end_time.split(':'))
+        except (ValueError, AttributeError):
+            sh, sm, eh, em = 22, 0, 8, 0
+        self.dnd_start_time_edit.setTime(QTime(sh, sm))
+        self.dnd_end_time_edit.setTime(QTime(eh, em))
 
     def _save(self) -> None:
         self.error_label.setText('')
         try:
             launch_at_startup = self.autostart_checkbox.isChecked()
             auto_remind_on_launch = self.auto_remind_checkbox.isChecked()
+            dnd_enabled = self.dnd_enabled_checkbox.isChecked()
+            dnd_days = [i for i, cb in enumerate(self.dnd_day_checkboxes) if cb.isChecked()]
+            dnd_start_time = self.dnd_start_time_edit.time().toString('HH:mm')
+            dnd_end_time = self.dnd_end_time_edit.time().toString('HH:mm')
             self.settings_repository.save(
                 AppSettings(
                     launch_at_startup=launch_at_startup,
@@ -95,6 +161,10 @@ class SettingsDialog(QDialog):
                     ark_base_url=self.ark_base_url_input.text().strip(),
                     ark_api_key=self.ark_api_key_input.text().strip(),
                     ark_model_name=self.ark_model_name_input.text().strip(),
+                    dnd_enabled=dnd_enabled,
+                    dnd_days=dnd_days,
+                    dnd_start_time=dnd_start_time,
+                    dnd_end_time=dnd_end_time,
                 )
             )
             if launch_at_startup:

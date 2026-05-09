@@ -83,12 +83,12 @@ class ReminderDialog(QDialog):
             self.music_clear_button,
         ))
         form_layout.addRow('', self.enabled_checkbox)
-        form_layout.addRow('', self.visual_enabled_checkbox)
         form_layout.addRow('视觉提醒音频', self._build_picker_row(
             self.visual_music_path_input,
             self.visual_music_browse_button,
             self.visual_music_clear_button,
         ))
+        form_layout.addRow('', self.visual_enabled_checkbox)
         form_layout.addRow('', self.visual_test_button)
 
         self.error_label = QLabel('', self)

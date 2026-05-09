@@ -95,6 +95,36 @@ class Database:
                 column_name='ark_model_name',
                 column_definition="TEXT NOT NULL DEFAULT 'doubao-seed-2-0-mini-260215'",
             )
+            self._ensure_column(
+                connection,
+                table_name='app_settings',
+                column_name='dnd_enabled',
+                column_definition='INTEGER NOT NULL DEFAULT 0',
+            )
+            self._ensure_column(
+                connection,
+                table_name='app_settings',
+                column_name='dnd_days',
+                column_definition="TEXT NOT NULL DEFAULT ''",
+            )
+            self._ensure_column(
+                connection,
+                table_name='app_settings',
+                column_name='dnd_start_time',
+                column_definition="TEXT NOT NULL DEFAULT '22:00'",
+            )
+            self._ensure_column(
+                connection,
+                table_name='app_settings',
+                column_name='dnd_end_time',
+                column_definition="TEXT NOT NULL DEFAULT '08:00'",
+            )
+            self._ensure_column(
+                connection,
+                table_name='reminders',
+                column_name='dnd_paused',
+                column_definition='INTEGER NOT NULL DEFAULT 0',
+            )
 
     def _ensure_column(
         self,
