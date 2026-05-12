@@ -12,6 +12,7 @@ from reminder_client.resources import load_app_icon
 from reminder_client.services.ark_vision_client import ArkVisionClient
 from reminder_client.services.audio_service import AudioService
 from reminder_client.services.autostart_service import AutostartService
+from reminder_client.services.lock_screen_service import LockScreenService
 from reminder_client.services.notification_service import QtTrayNotificationService
 from reminder_client.services.reminder_service import ReminderService
 from reminder_client.services.camera_service import CameraService
@@ -76,6 +77,7 @@ def build_main_window() -> MainWindow:
         audio_service=audio_service,
         settings_repository=settings_repository,
         vision_decision_service=vision_decision_service,
+        lock_screen_service=LockScreenService(),
     )
     autostart_service = AutostartService('ReminderClient', resolve_launch_command())
     window = MainWindow(

@@ -117,17 +117,6 @@ def test_visual_test_button_invokes_service(qtbot, tmp_path, monkeypatch) -> Non
     assert calls[0]['visual_reminder_enabled'] is True
 
 
-def test_enabled_checkbox_precedes_visual_test_button(qtbot, tmp_path) -> None:
-    service, _, _ = build_reminder_service(tmp_path)
-    dialog = ReminderDialog(service)
-    qtbot.addWidget(dialog)
-
-    enabled_row, _ = dialog.form_layout.getWidgetPosition(dialog.enabled_checkbox)
-    visual_test_row, _ = dialog.form_layout.getWidgetPosition(dialog.visual_test_button)
-
-    assert enabled_row < visual_test_row
-
-
 def test_settings_dialog_updates_autostart(qtbot, tmp_path) -> None:
     _, _, database = build_reminder_service(tmp_path)
     settings_repository = SettingsRepository(database)

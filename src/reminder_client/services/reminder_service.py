@@ -5,6 +5,7 @@ from datetime import datetime
 from reminder_client.domain.enums import ReminderRuntimeState, VisionDecisionResult
 from reminder_client.domain.models import Reminder, normalize_reminder_name
 from reminder_client.services.audio_service import AudioService
+from reminder_client.services.lock_screen_service import LockScreenService
 from reminder_client.services.notification_service import NotificationService
 from reminder_client.services.scheduler import ReminderScheduler
 from reminder_client.services.visual_decision_scheduler import QtVisualDecisionScheduler
@@ -23,6 +24,7 @@ class ReminderService:
         settings_repository: SettingsRepository | None = None,
         vision_decision_service: VisionDecisionService | None = None,
         visual_decision_scheduler: QtVisualDecisionScheduler | None = None,
+        lock_screen_service: LockScreenService | None = None,
     ) -> None:
         self.repository = repository
         self.scheduler = scheduler or ReminderScheduler()
@@ -31,6 +33,7 @@ class ReminderService:
         self.settings_repository = settings_repository
         self.vision_decision_service = vision_decision_service
         self.visual_decision_scheduler = visual_decision_scheduler or QtVisualDecisionScheduler()
+        self.lock_screen_service = lock_screen_service
         self._pending_visual_decisions: set[str] = set()
 
     def list_reminders(self) -> list[Reminder]:
@@ -49,6 +52,9 @@ class ReminderService:
         visual_reminder_enabled: bool = False,
         visual_music_path: str | None = None,
         enabled: bool = True,
+        notification_enabled: bool = False,
+        audio_enabled: bool = False,
+        lock_screen_enabled: bool = False,
     ) -> Reminder:
         reminder = Reminder(
             name=normalize_reminder_name(name),
@@ -58,6 +64,9 @@ class ReminderService:
             visual_reminder_enabled=bool(visual_reminder_enabled),
             visual_music_path=visual_music_path or None,
             enabled=enabled,
+            notification_enabled=bool(notification_enabled),
+            audio_enabled=bool(audio_enabled),
+            lock_screen_enabled=bool(lock_screen_enabled),
         )
         return self.repository.add(reminder)
 
@@ -124,6 +133,12 @@ class ReminderService:
             )
         if 'enabled' in changes:
             reminder.enabled = bool(changes['enabled'])
+        if 'notification_enabled' in changes:
+            reminder.notification_enabled = bool(changes['notification_enabled'])
+        if 'audio_enabled' in changes:
+            reminder.audio_enabled = bool(changes['audio_enabled'])
+        if 'lock_screen_enabled' in changes:
+            reminder.lock_screen_enabled = bool(changes['lock_screen_enabled'])
 
         reminder.__post_init__()
         if was_running:
@@ -155,14 +170,19 @@ class ReminderService:
         reminder = self._get_required(reminder_id)
         result = self.scheduler.tick(reminder, seconds)
 
-        if result.reminder_triggered and self.notification_service is not None:
+        if result.reminder_triggered and reminder.notification_enabled and self.notification_service is not None:
             try:
                 self.notification_service.notify_reminder_triggered(reminder)
             except Exception:
                 pass
-        if result.reminder_triggered and self.audio_service is not None:
+        if result.reminder_triggered and reminder.audio_enabled and self.audio_service is not None:
             try:
                 self.audio_service.play(reminder.music_path)
+            except Exception:
+                pass
+        if result.reminder_triggered and reminder.lock_screen_enabled and self.lock_screen_service is not None:
+            try:
+                self.lock_screen_service.lock()
             except Exception:
                 pass
         if (

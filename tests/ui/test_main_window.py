@@ -3,7 +3,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QMessageBox, QPushButton
 
 from reminder_client.domain.enums import ReminderPhase, ReminderRuntimeState
-from reminder_client.domain.models import Reminder
+from reminder_client.domain.models import AppSettings, Reminder
 from reminder_client.ui.main_window import MainWindow
 from reminder_client.ui.vision_log_dialog import VisionLogDialog
 from reminder_client.ui.tray_controller import TrayController
@@ -75,7 +75,7 @@ class FakeReminderService:
 
 class FakeSettingsRepository:
     def get(self):
-        raise AssertionError('本测试不需要调用设置仓储')
+        return AppSettings()
 
 
 class FakeAutostartService:

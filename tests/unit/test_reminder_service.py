@@ -172,6 +172,8 @@ def test_tick_triggers_notification_and_audio(reminder_service) -> None:
             break_interval_minutes=5,
             runtime_state=ReminderRuntimeState.RUNNING,
             remaining_seconds=1,
+            notification_enabled=True,
+            audio_enabled=True,
         )
     )
 
@@ -235,6 +237,8 @@ def test_tick_still_plays_audio_when_notification_fails(tmp_path) -> None:
             runtime_state=ReminderRuntimeState.RUNNING,
             remaining_seconds=1,
             music_path=str(sound),
+            notification_enabled=True,
+            audio_enabled=True,
         )
     )
 

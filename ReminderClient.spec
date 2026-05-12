@@ -5,7 +5,7 @@ a = Analysis(
     ['src\\reminder_client\\main.py'],
     pathex=['src'],
     binaries=[],
-    datas=[('assets\\app_icon.ico', 'assets'), ('assets\\app_icon.png', 'assets')],
+    datas=[('assets\\app_icon.ico', 'assets'), ('assets\\app_icon.png', 'assets'), ('assets\\wechat_qr.jpg', 'assets'), ('assets\\wechat_official_qr.jpg', 'assets')],
     hiddenimports=['PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets', 'PySide6.QtMultimedia'],
     hookspath=[],
     hooksconfig={},

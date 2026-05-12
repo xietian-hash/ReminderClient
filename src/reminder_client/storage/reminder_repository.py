@@ -24,8 +24,9 @@ class ReminderRepository:
                         id, name, reminder_interval_minutes, break_interval_minutes,
                         music_path, visual_reminder_enabled, visual_music_path,
                         enabled, runtime_state, current_phase,
-                        remaining_seconds, created_at, updated_at, dnd_paused
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        remaining_seconds, created_at, updated_at, dnd_paused,
+                        notification_enabled, audio_enabled, lock_screen_enabled
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     self._to_row(reminder),
                 )
@@ -44,7 +45,8 @@ class ReminderRepository:
                     SET name = ?, reminder_interval_minutes = ?, break_interval_minutes = ?,
                         music_path = ?, visual_reminder_enabled = ?, visual_music_path = ?,
                         enabled = ?, runtime_state = ?, current_phase = ?,
-                        remaining_seconds = ?, updated_at = ?, dnd_paused = ?
+                        remaining_seconds = ?, updated_at = ?, dnd_paused = ?,
+                        notification_enabled = ?, audio_enabled = ?, lock_screen_enabled = ?
                     WHERE id = ?
                     """,
                     (
@@ -60,6 +62,9 @@ class ReminderRepository:
                         reminder.remaining_seconds,
                         reminder.updated_at.isoformat(),
                         int(reminder.dnd_paused),
+                        int(reminder.notification_enabled),
+                        int(reminder.audio_enabled),
+                        int(reminder.lock_screen_enabled),
                         reminder.id,
                     ),
                 )
@@ -109,6 +114,9 @@ class ReminderRepository:
             reminder.created_at.isoformat(),
             reminder.updated_at.isoformat(),
             int(reminder.dnd_paused),
+            int(reminder.notification_enabled),
+            int(reminder.audio_enabled),
+            int(reminder.lock_screen_enabled),
         )
 
     def _from_row(self, row: sqlite3.Row) -> Reminder:
@@ -126,6 +134,9 @@ class ReminderRepository:
             current_phase=ReminderPhase(row["current_phase"]),
             remaining_seconds=row["remaining_seconds"],
             dnd_paused=bool(row["dnd_paused"]) if "dnd_paused" in row_keys else False,
+            notification_enabled=bool(row["notification_enabled"]) if "notification_enabled" in row_keys else True,
+            audio_enabled=bool(row["audio_enabled"]) if "audio_enabled" in row_keys else True,
+            lock_screen_enabled=bool(row["lock_screen_enabled"]) if "lock_screen_enabled" in row_keys else False,
             created_at=datetime.fromisoformat(row["created_at"]),
             updated_at=datetime.fromisoformat(row["updated_at"]),
         )
