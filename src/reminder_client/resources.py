@@ -10,6 +10,7 @@ ASSETS_DIR_NAME = 'assets'
 APP_ICON_FILE_NAME = 'app_icon.png'
 PACKAGE_ICON_FILE_NAME = 'app_icon.ico'
 WECHAT_QR_FILE_NAME = 'wechat_qr.jpg'
+WECHAT_OFFICIAL_QR_FILE_NAME = 'wechat_official_qr.jpg'
 
 
 def resolve_project_root() -> Path:
@@ -32,6 +33,10 @@ def resolve_package_icon_path() -> Path:
 
 def resolve_wechat_qr_path() -> Path:
     return resolve_asset_path(WECHAT_QR_FILE_NAME)
+
+
+def resolve_wechat_official_qr_path() -> Path:
+    return resolve_asset_path(WECHAT_OFFICIAL_QR_FILE_NAME)
 
 
 def load_app_icon() -> QIcon:

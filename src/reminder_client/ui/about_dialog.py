@@ -8,12 +8,10 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QScrollArea,
-    QSizePolicy,
     QVBoxLayout,
-    QWidget,
 )
 
-from reminder_client.resources import resolve_wechat_qr_path
+from reminder_client.resources import resolve_wechat_official_qr_path, resolve_wechat_qr_path
 
 
 _CHANGELOG = """
@@ -52,12 +50,14 @@ v0.1.0（2026-03-31）
   · 支持开机自启
 """.strip()
 
+_QR_SIZE = 150
+
 
 class AboutDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle('关于')
-        self.resize(520, 500)
+        self.resize(520, 520)
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -85,30 +85,20 @@ class AboutDialog(QDialog):
         sep.setStyleSheet('background: #e0e0e0;')
         root_layout.addWidget(sep)
 
-        # 二维码区域
+        # 二维码区域：个人微信 + 公众号并排
         qr_section = QHBoxLayout()
-        qr_section.setSpacing(16)
-
-        qr_label = QLabel(self)
-        qr_path = resolve_wechat_qr_path()
-        if qr_path.exists():
-            pixmap = QPixmap(str(qr_path)).scaled(
-                160, 160,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            qr_label.setPixmap(pixmap)
-        else:
-            qr_label.setText('[二维码图片未找到]')
-        qr_label.setFixedSize(160, 160)
-        qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        desc_label = QLabel('扫描左侧二维码\n添加作者微信好友\n欢迎交流与反馈', self)
-        desc_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-        desc_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-
-        qr_section.addWidget(qr_label)
-        qr_section.addWidget(desc_label)
+        qr_section.setSpacing(24)
+        qr_section.addStretch(1)
+        qr_section.addLayout(self._build_qr_block(
+            resolve_wechat_qr_path(),
+            '个人微信\n扫码添加好友',
+        ))
+        qr_section.addStretch(1)
+        qr_section.addLayout(self._build_qr_block(
+            resolve_wechat_official_qr_path(),
+            '微信公众号\n扫码关注',
+        ))
+        qr_section.addStretch(1)
         root_layout.addLayout(qr_section)
 
         root_layout.addStretch(1)
@@ -121,3 +111,27 @@ class AboutDialog(QDialog):
         close_btn.clicked.connect(self.accept)
         btn_layout.addWidget(close_btn)
         root_layout.addLayout(btn_layout)
+
+    def _build_qr_block(self, qr_path, caption: str) -> QVBoxLayout:
+        layout = QVBoxLayout()
+        layout.setSpacing(6)
+
+        qr_label = QLabel(self)
+        if qr_path.exists():
+            pixmap = QPixmap(str(qr_path)).scaled(
+                _QR_SIZE, _QR_SIZE,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            qr_label.setPixmap(pixmap)
+        else:
+            qr_label.setText('[图片未找到]')
+        qr_label.setFixedSize(_QR_SIZE, _QR_SIZE)
+        qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        caption_label = QLabel(caption, self)
+        caption_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+
+        layout.addWidget(qr_label)
+        layout.addWidget(caption_label)
+        return layout
