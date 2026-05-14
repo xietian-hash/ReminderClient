@@ -124,7 +124,8 @@ class MainWindow(QMainWindow):
         self.runtime_timer.start()
 
     def _setup_dnd_timer(self) -> None:
-        self._dnd_active = self._compute_dnd_active()
+        self._dnd_active = False
+        QTimer.singleShot(0, self._check_dnd_transition)
         now = datetime.now()
         # 计算到下一个5分钟整点边界的秒数（如 22:03 → 等待 120 秒到 22:05）
         seconds_past = (now.minute % 5) * 60 + now.second
@@ -172,6 +173,12 @@ class MainWindow(QMainWindow):
         self.load_reminders()
 
     def _handle_runtime_tick(self) -> None:
+        if self._dnd_active:
+            reminders = self.reminder_service.list_reminders()
+            if any(r.runtime_state == ReminderRuntimeState.RUNNING for r in reminders):
+                self._handle_enter_dnd()
+            return
+
         reminders = self.reminder_service.list_reminders()
         running_reminders = [
             reminder for reminder in reminders if reminder.runtime_state == ReminderRuntimeState.RUNNING
@@ -244,6 +251,7 @@ class MainWindow(QMainWindow):
             return
         dialog = SettingsDialog(self.settings_repository, self.autostart_service, parent=self)
         dialog.exec()
+        self._check_dnd_transition()
 
     def show_about_dialog(self) -> None:
         dialog = AboutDialog(parent=self)
