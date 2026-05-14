@@ -15,6 +15,11 @@ from reminder_client.resources import resolve_wechat_official_qr_path, resolve_w
 
 
 _CHANGELOG = """
+v0.1.8（2026-05-14）
+  · 修复应用在勿扰时间段内启动时勿扰不生效的问题
+  · 修复修改勿扰设置后需等待 5 分钟才生效的问题
+  · 勿扰期间手动启动的提醒也会被自动暂停
+
 v0.1.7（2026-05-09）
   · 新增提醒方式：通知提醒、音频提醒、锁屏提醒，支持多选
   · 音频提醒勾选后才显示音频文件选择组件
