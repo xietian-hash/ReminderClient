@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "reminder-client"
-version = "0.1.5"
+version = "0.1.10"
 description = "Windows 定时提醒客户端"
 readme = "README.md"
 requires-python = ">=3.11"

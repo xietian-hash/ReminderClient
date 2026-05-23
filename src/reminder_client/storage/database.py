@@ -38,7 +38,7 @@ class Database:
                     settings_key INTEGER PRIMARY KEY CHECK (settings_key = 1),
                     launch_at_startup INTEGER NOT NULL DEFAULT 0,
                     auto_remind_on_launch INTEGER NOT NULL DEFAULT 0,
-                    ark_base_url TEXT NOT NULL DEFAULT 'https://ark.cn-beijing.volces.com/api/v3/responses',
+                    ark_base_url TEXT NOT NULL DEFAULT 'https://ark.cn-beijing.volces.com/api/v3',
                     ark_api_key TEXT NOT NULL DEFAULT '',
                     ark_model_name TEXT NOT NULL DEFAULT 'doubao-seed-2-0-mini-260215',
                     updated_at TEXT NOT NULL
@@ -81,7 +81,7 @@ class Database:
                 connection,
                 table_name='app_settings',
                 column_name='ark_base_url',
-                column_definition="TEXT NOT NULL DEFAULT 'https://ark.cn-beijing.volces.com/api/v3/responses'",
+                column_definition="TEXT NOT NULL DEFAULT 'https://ark.cn-beijing.volces.com/api/v3'",
             )
             self._ensure_column(
                 connection,

@@ -15,6 +15,14 @@ from reminder_client.resources import resolve_wechat_official_qr_path, resolve_w
 
 
 _CHANGELOG = """
+v0.1.10（2026-05-23）
+  · 大模型接口改为 OpenAI 兼容格式（chat/completions），支持更多第三方模型服务
+  · Base URL 只需填写根地址，接口路径由程序自动拼接
+
+v0.1.9（2026-05-21）
+  · 关于弹窗新增公众号二维码
+  · 更新滴眼药水提醒音频
+
 v0.1.8（2026-05-14）
   · 修复应用在勿扰时间段内启动时勿扰不生效的问题
   · 修复修改勿扰设置后需等待 5 分钟才生效的问题
