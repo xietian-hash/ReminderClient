@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QTime
+from PySide6.QtCore import QObject, QThread, QTime, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -14,6 +14,31 @@ from PySide6.QtWidgets import (
 )
 
 from reminder_client.domain.models import AppSettings
+from reminder_client.services.ark_vision_client import ArkVisionClient
+
+
+class _ModelTestWorker(QObject):
+    """在后台线程中执行大模型连接测试，完成后通过信号通知 UI。"""
+
+    finished: Signal = Signal(str, bool)  # message, success
+
+    def __init__(self, base_url: str, api_key: str, model_name: str) -> None:
+        super().__init__()
+        self._base_url = base_url
+        self._api_key = api_key
+        self._model_name = model_name
+
+    def run(self) -> None:
+        try:
+            client = ArkVisionClient(timeout_seconds=15)
+            client.test_connection(
+                base_url=self._base_url,
+                api_key=self._api_key,
+                model_name=self._model_name,
+            )
+            self.finished.emit('✓ 连接成功，模型已响应', True)
+        except Exception as exc:
+            self.finished.emit(f'✗ 连接失败：{exc}', False)
 
 
 class SettingsDialog(QDialog):
@@ -21,8 +46,10 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.settings_repository = settings_repository
         self.autostart_service = autostart_service
+        self._test_thread: QThread | None = None
+        self._test_worker: _ModelTestWorker | None = None
         self.setWindowTitle('系统设置')
-        self.resize(520, 560)
+        self.resize(520, 600)
         self._build_ui()
         self._load_settings()
 
@@ -59,6 +86,16 @@ class SettingsDialog(QDialog):
         form_layout.addRow('Ark 调用地址', self.ark_base_url_input)
         form_layout.addRow('Ark API Key', self.ark_api_key_input)
         form_layout.addRow('Ark 模型名', self.ark_model_name_input)
+
+        # 大模型连接测试
+        test_layout = QHBoxLayout()
+        self._test_button = QPushButton('测试连接', self)
+        self._test_button.setObjectName('modelTestButton')
+        self._test_button.clicked.connect(self._run_connection_test)
+        self._test_status_label = QLabel('', self)
+        self._test_status_label.setObjectName('modelTestStatusLabel')
+        test_layout.addWidget(self._test_button)
+        test_layout.addWidget(self._test_status_label, 1)
 
         # 勿扰设置
         dnd_separator = QLabel('── 勿扰设置 ──────────────────────────', self)
@@ -116,6 +153,8 @@ class SettingsDialog(QDialog):
         root_layout.addWidget(self.auto_remind_description_label)
         root_layout.addSpacing(8)
         root_layout.addLayout(form_layout)
+        root_layout.addSpacing(4)
+        root_layout.addLayout(test_layout)
         root_layout.addSpacing(8)
         root_layout.addWidget(dnd_separator)
         root_layout.addSpacing(4)
@@ -144,6 +183,42 @@ class SettingsDialog(QDialog):
             sh, sm, eh, em = 22, 0, 8, 0
         self.dnd_start_time_edit.setTime(QTime(sh, sm))
         self.dnd_end_time_edit.setTime(QTime(eh, em))
+
+    def _run_connection_test(self) -> None:
+        base_url = self.ark_base_url_input.text().strip()
+        api_key = self.ark_api_key_input.text().strip()
+        model_name = self.ark_model_name_input.text().strip()
+
+        if not base_url or not api_key or not model_name:
+            self._test_status_label.setStyleSheet('color: #b42318;')
+            self._test_status_label.setText('请先填写调用地址、API Key 和模型名')
+            return
+
+        self._test_button.setEnabled(False)
+        self._test_status_label.setStyleSheet('color: #666666;')
+        self._test_status_label.setText('测试中…')
+
+        self._test_thread = QThread(self)
+        self._test_worker = _ModelTestWorker(base_url, api_key, model_name)
+        self._test_worker.moveToThread(self._test_thread)
+        self._test_thread.started.connect(self._test_worker.run)
+        self._test_worker.finished.connect(self._on_test_finished)
+        self._test_worker.finished.connect(self._test_thread.quit)
+        self._test_thread.finished.connect(self._test_thread.deleteLater)
+        self._test_thread.start()
+
+    def _on_test_finished(self, message: str, success: bool) -> None:
+        self._test_button.setEnabled(True)
+        color = '#2e7d32' if success else '#b42318'
+        self._test_status_label.setStyleSheet(f'color: {color};')
+        self._test_status_label.setText(message)
+
+    def closeEvent(self, event) -> None:
+        """对话框关闭时等待测试线程结束，避免线程悬空。"""
+        if self._test_thread is not None and self._test_thread.isRunning():
+            self._test_thread.quit()
+            self._test_thread.wait(3000)
+        super().closeEvent(event)
 
     def _save(self) -> None:
         self.error_label.setText('')

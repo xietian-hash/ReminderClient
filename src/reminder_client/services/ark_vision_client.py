@@ -40,7 +40,30 @@ class ArkVisionClient:
                 }
             ],
         }
+        return self._post(endpoint, payload, api_key)
 
+    def test_connection(
+        self,
+        *,
+        base_url: str,
+        api_key: str,
+        model_name: str,
+    ) -> str:
+        """发送一条纯文本消息，验证 API 地址、API Key 和模型名称是否正确。"""
+        endpoint = base_url.rstrip('/') + '/chat/completions'
+        payload = {
+            'model': model_name,
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': '请回复"OK"。',
+                }
+            ],
+            'max_tokens': 10,
+        }
+        return self._post(endpoint, payload, api_key)
+
+    def _post(self, endpoint: str, payload: dict, api_key: str) -> str:
         body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
         req = request.Request(
             endpoint,
@@ -51,7 +74,6 @@ class ArkVisionClient:
             },
             method='POST',
         )
-
         try:
             with request.urlopen(req, timeout=self.timeout_seconds) as response:
                 response_body = response.read().decode('utf-8')

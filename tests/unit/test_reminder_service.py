@@ -303,7 +303,7 @@ def visual_reminder_service(tmp_path):
     scheduler = FakeVisualDecisionScheduler()
     settings_repository = FakeSettingsRepository(
         AppSettings(
-            ark_base_url='https://ark.cn-beijing.volces.com/api/v3/responses',
+            ark_base_url='https://ark.cn-beijing.volces.com/api/v3',
             ark_api_key='test-key',
             ark_model_name='doubao-seed-2-0-mini-260215',
         )

@@ -15,6 +15,11 @@ from reminder_client.resources import resolve_wechat_official_qr_path, resolve_w
 
 
 _CHANGELOG = """
+v0.1.11（2026-05-27）
+  · 修复大模型调用 URL 错误：默认地址末尾多余的 /responses 路径导致所有调用失败
+  · 新增数据库迁移：自动修正已安装用户数据库中的错误 URL
+  · 设置界面新增「测试连接」按钮，可在保存前验证 API 配置是否可用
+
 v0.1.10（2026-05-23）
   · 大模型接口改为 OpenAI 兼容格式（chat/completions），支持更多第三方模型服务
   · Base URL 只需填写根地址，接口路径由程序自动拼接

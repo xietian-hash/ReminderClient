@@ -77,7 +77,7 @@ class Reminder:
 class AppSettings:
     launch_at_startup: bool = False
     auto_remind_on_launch: bool = False
-    ark_base_url: str = 'https://ark.cn-beijing.volces.com/api/v3/responses'
+    ark_base_url: str = 'https://ark.cn-beijing.volces.com/api/v3'
     ark_api_key: str = ''
     ark_model_name: str = 'doubao-seed-2-0-mini-260215'
     dnd_enabled: bool = False

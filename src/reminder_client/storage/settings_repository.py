@@ -69,7 +69,7 @@ class SettingsRepository:
                 (
                     int(settings.launch_at_startup),
                     int(settings.auto_remind_on_launch),
-                    settings.ark_base_url.strip() or 'https://ark.cn-beijing.volces.com/api/v3/responses',
+                    settings.ark_base_url.strip() or 'https://ark.cn-beijing.volces.com/api/v3',
                     settings.ark_api_key.strip(),
                     settings.ark_model_name.strip() or 'doubao-seed-2-0-mini-260215',
                     int(settings.dnd_enabled),

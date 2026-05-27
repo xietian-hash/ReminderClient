@@ -143,6 +143,14 @@ class Database:
                 column_name='lock_screen_enabled',
                 column_definition='INTEGER NOT NULL DEFAULT 0',
             )
+            # 迁移：将旧版 /responses 结尾的 URL 更新为正确的 OpenAI 兼容 base_url
+            connection.execute(
+                """
+                UPDATE app_settings
+                SET ark_base_url = 'https://ark.cn-beijing.volces.com/api/v3'
+                WHERE ark_base_url = 'https://ark.cn-beijing.volces.com/api/v3/responses'
+                """
+            )
 
     def _ensure_column(
         self,

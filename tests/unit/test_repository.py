@@ -83,7 +83,7 @@ def test_save_and_load_vision_config(database: Database) -> None:
         AppSettings(
             launch_at_startup=True,
             auto_remind_on_launch=True,
-            ark_base_url="https://ark.cn-beijing.volces.com/api/v3/responses",
+            ark_base_url="https://ark.cn-beijing.volces.com/api/v3",
             ark_api_key="test-key",
             ark_model_name="doubao-seed-2-0-mini-260215",
         )
@@ -91,7 +91,7 @@ def test_save_and_load_vision_config(database: Database) -> None:
 
     settings = repository.get()
 
-    assert settings.ark_base_url == "https://ark.cn-beijing.volces.com/api/v3/responses"
+    assert settings.ark_base_url == "https://ark.cn-beijing.volces.com/api/v3"
     assert settings.ark_api_key == "test-key"
     assert settings.ark_model_name == "doubao-seed-2-0-mini-260215"
 
@@ -101,7 +101,7 @@ def test_vision_log_repository_writes_model_call(database: Database) -> None:
     log = VisionDecisionLog(
         reminder_id="reminder-id",
         reminder_name="涔呭潗鎻愰啋",
-        request_url="https://ark.cn-beijing.volces.com/api/v3/responses",
+        request_url="https://ark.cn-beijing.volces.com/api/v3",
         model_name="doubao-seed-2-0-mini-260215",
         result=VisionDecisionResult.USER_LEFT_DESK,
         raw_response_text='{"output":"用户已离开电脑前"}',

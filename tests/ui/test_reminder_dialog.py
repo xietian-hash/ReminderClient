@@ -126,7 +126,7 @@ def test_settings_dialog_updates_autostart(qtbot, tmp_path) -> None:
 
     dialog.autostart_checkbox.setChecked(True)
     dialog.auto_remind_checkbox.setChecked(True)
-    dialog.ark_base_url_input.setText('https://ark.cn-beijing.volces.com/api/v3/responses')
+    dialog.ark_base_url_input.setText('https://ark.cn-beijing.volces.com/api/v3')
     dialog.ark_api_key_input.setText('test-key')
     dialog.ark_model_name_input.setText('doubao-seed-2-0-mini-260215')
     qtbot.mouseClick(dialog.save_button, Qt.LeftButton)
