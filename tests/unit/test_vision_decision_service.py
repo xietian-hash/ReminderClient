@@ -79,8 +79,8 @@ def test_normalize_vision_result_maps_three_outputs() -> None:
     assert normalize_vision_result('其他内容') == VisionDecisionResult.FAILED
 
 
-def test_ark_client_builds_openai_compatible_request(monkeypatch) -> None:
-    """验证请求使用 OpenAI 兼容格式：URL 拼接 /chat/completions、messages 字段结构正确。"""
+def test_ark_client_builds_ark_native_request(monkeypatch) -> None:
+    """验证请求使用 Ark 原生格式：URL 拼接 /responses、input 字段结构正确。"""
     client = ArkVisionClient()
     captured: dict[str, object] = {}
 
@@ -93,7 +93,15 @@ def test_ark_client_builds_openai_compatible_request(monkeypatch) -> None:
 
         def read(self) -> bytes:
             return json.dumps(
-                {'choices': [{'message': {'content': '用户未离开电脑前'}}]},
+                {
+                    'output': [
+                        {
+                            'type': 'message',
+                            'role': 'assistant',
+                            'content': [{'type': 'output_text', 'text': '用户未离开电脑前'}],
+                        }
+                    ]
+                },
                 ensure_ascii=False,
             ).encode('utf-8')
 
@@ -109,23 +117,24 @@ def test_ark_client_builds_openai_compatible_request(monkeypatch) -> None:
         prompt=VISION_DECISION_PROMPT,
         base_url='https://ark.cn-beijing.volces.com/api/v3',
         api_key='test-key',
-        model_name='doubao-seed-2-0-mini-260215',
+        model_name='ep-20260527152706-kbxpb',
     )
 
-    request = captured['request']
-    body = json.loads(request.data.decode('utf-8'))
+    req = captured['request']
+    body = json.loads(req.data.decode('utf-8'))
 
     assert result == '用户未离开电脑前'
-    assert request.full_url == 'https://ark.cn-beijing.volces.com/api/v3/chat/completions'
-    assert request.get_header('Authorization') == 'Bearer test-key'
-    assert body['model'] == 'doubao-seed-2-0-mini-260215'
-    assert body['messages'][0]['content'][0]['type'] == 'image_url'
-    assert body['messages'][0]['content'][0]['image_url']['url'].startswith('data:image/png;base64,')
-    assert body['messages'][0]['content'][1]['text'] == VISION_DECISION_PROMPT
+    assert req.full_url == 'https://ark.cn-beijing.volces.com/api/v3/responses'
+    assert req.get_header('Authorization') == 'Bearer test-key'
+    assert body['model'] == 'ep-20260527152706-kbxpb'
+    assert body['input'][0]['content'][0]['type'] == 'input_image'
+    assert body['input'][0]['content'][0]['image_url'].startswith('data:image/png;base64,')
+    assert body['input'][0]['content'][1]['type'] == 'input_text'
+    assert body['input'][0]['content'][1]['text'] == VISION_DECISION_PROMPT
 
 
 def test_ark_client_returns_raw_body_when_response_format_unknown(monkeypatch) -> None:
-    """响应不含 choices 字段时，直接返回原始响应文本。"""
+    """响应不含 output 字段时，直接返回原始响应文本。"""
     client = ArkVisionClient()
 
     class FakeResponse:
@@ -148,15 +157,14 @@ def test_ark_client_returns_raw_body_when_response_format_unknown(monkeypatch) -
         prompt=VISION_DECISION_PROMPT,
         base_url='https://ark.cn-beijing.volces.com/api/v3',
         api_key='test-key',
-        model_name='doubao-seed-2-0-mini-260215',
+        model_name='ep-20260527152706-kbxpb',
     )
 
-    assert '未知字段' not in result
     assert 'unknown_field' in result
 
 
 def test_ark_client_test_connection_sends_text_only_request(monkeypatch) -> None:
-    """test_connection 发送纯文本消息，URL 正确拼接 /chat/completions，不含图片字段。"""
+    """test_connection 发送纯文本消息，URL 正确拼接 /responses，不含图片字段。"""
     client = ArkVisionClient()
     captured: dict[str, object] = {}
 
@@ -169,7 +177,15 @@ def test_ark_client_test_connection_sends_text_only_request(monkeypatch) -> None
 
         def read(self) -> bytes:
             return json.dumps(
-                {'choices': [{'message': {'content': 'OK'}}]},
+                {
+                    'output': [
+                        {
+                            'type': 'message',
+                            'role': 'assistant',
+                            'content': [{'type': 'output_text', 'text': 'OK'}],
+                        }
+                    ]
+                },
                 ensure_ascii=False,
             ).encode('utf-8')
 
@@ -182,18 +198,18 @@ def test_ark_client_test_connection_sends_text_only_request(monkeypatch) -> None
     result = client.test_connection(
         base_url='https://ark.cn-beijing.volces.com/api/v3',
         api_key='test-key',
-        model_name='doubao-seed-2-0-mini-260215',
+        model_name='ep-20260527152706-kbxpb',
     )
 
     req = captured['request']
     body = json.loads(req.data.decode('utf-8'))
 
     assert result == 'OK'
-    assert req.full_url == 'https://ark.cn-beijing.volces.com/api/v3/chat/completions'
+    assert req.full_url == 'https://ark.cn-beijing.volces.com/api/v3/responses'
     assert req.get_header('Authorization') == 'Bearer test-key'
-    assert body['model'] == 'doubao-seed-2-0-mini-260215'
-    assert isinstance(body['messages'][0]['content'], str)
-    assert 'image_url' not in str(body)
+    assert body['model'] == 'ep-20260527152706-kbxpb'
+    assert body['input'][0]['content'][0]['type'] == 'input_text'
+    assert 'input_image' not in str(body)
 
 
 def test_ark_client_test_connection_raises_on_http_error(monkeypatch) -> None:

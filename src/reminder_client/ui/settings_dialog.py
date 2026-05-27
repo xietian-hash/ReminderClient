@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QObject, QThread, QTime, Signal
+from PySide6.QtCore import QObject, QThread, QTime, Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -94,6 +94,9 @@ class SettingsDialog(QDialog):
         self._test_button.clicked.connect(self._run_connection_test)
         self._test_status_label = QLabel('', self)
         self._test_status_label.setObjectName('modelTestStatusLabel')
+        self._test_status_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
         test_layout.addWidget(self._test_button)
         test_layout.addWidget(self._test_status_label, 1)
 

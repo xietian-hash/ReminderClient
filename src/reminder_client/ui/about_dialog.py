@@ -15,6 +15,11 @@ from reminder_client.resources import resolve_wechat_official_qr_path, resolve_w
 
 
 _CHANGELOG = """
+v0.1.12（2026-05-27）
+  · 大模型接口切换为 Ark 原生格式（/responses），支持视觉识别模型
+  · 请求体改用 input/input_image/input_text 字段，移除不兼容的 max_tokens 参数
+  · 修复设置界面测试连接错误信息无法选中复制的问题
+
 v0.1.11（2026-05-27）
   · 修复大模型调用 URL 错误：默认地址末尾多余的 /responses 路径导致所有调用失败
   · 新增数据库迁移：自动修正已安装用户数据库中的错误 URL

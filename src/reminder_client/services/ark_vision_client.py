@@ -19,21 +19,19 @@ class ArkVisionClient:
         api_key: str,
         model_name: str,
     ) -> str:
-        endpoint = base_url.rstrip('/') + '/chat/completions'
+        endpoint = base_url.rstrip('/') + '/responses'
         payload = {
             'model': model_name,
-            'messages': [
+            'input': [
                 {
                     'role': 'user',
                     'content': [
                         {
-                            'type': 'image_url',
-                            'image_url': {
-                                'url': self._build_image_data_url(image_bytes),
-                            },
+                            'type': 'input_image',
+                            'image_url': self._build_image_data_url(image_bytes),
                         },
                         {
-                            'type': 'text',
+                            'type': 'input_text',
                             'text': prompt,
                         },
                     ],
@@ -50,16 +48,20 @@ class ArkVisionClient:
         model_name: str,
     ) -> str:
         """发送一条纯文本消息，验证 API 地址、API Key 和模型名称是否正确。"""
-        endpoint = base_url.rstrip('/') + '/chat/completions'
+        endpoint = base_url.rstrip('/') + '/responses'
         payload = {
             'model': model_name,
-            'messages': [
+            'input': [
                 {
                     'role': 'user',
-                    'content': '请回复"OK"。',
+                    'content': [
+                        {
+                            'type': 'input_text',
+                            'text': '请回复"OK"。',
+                        }
+                    ],
                 }
             ],
-            'max_tokens': 10,
         }
         return self._post(endpoint, payload, api_key)
 
@@ -91,13 +93,19 @@ class ArkVisionClient:
         return f'data:image/png;base64,{encoded}'
 
     def _extract_text(self, payload: Any, raw_body: str) -> str:
+        # Ark /responses 格式：output[].type=="message".content[].type=="output_text".text
         if isinstance(payload, dict):
-            # OpenAI format: choices[0].message.content
-            choices = payload.get('choices')
-            if isinstance(choices, list) and choices:
-                message = choices[0].get('message', {})
-                content = message.get('content')
-                if isinstance(content, str) and content.strip():
-                    return content.strip()
+            output = payload.get('output')
+            if isinstance(output, list):
+                for item in output:
+                    if not isinstance(item, dict) or item.get('type') != 'message':
+                        continue
+                    content = item.get('content', [])
+                    if isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, dict) and block.get('type') == 'output_text':
+                                text = block.get('text', '')
+                                if isinstance(text, str) and text.strip():
+                                    return text.strip()
 
         return raw_body
