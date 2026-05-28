@@ -4,6 +4,7 @@ from PySide6.QtCore import QObject, QThread, QTime, Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
+    QFileDialog,
     QFormLayout,
     QHBoxLayout,
     QLabel,
@@ -15,30 +16,34 @@ from PySide6.QtWidgets import (
 
 from reminder_client.domain.models import AppSettings
 from reminder_client.services.ark_vision_client import ArkVisionClient
+from reminder_client.services.vision_decision_service import VISION_DECISION_PROMPT
 
 
-class _ModelTestWorker(QObject):
-    """在后台线程中执行大模型连接测试，完成后通过信号通知 UI。"""
+class _ImageTestWorker(QObject):
+    """在后台线程中执行图片识别测试，完成后通过信号通知 UI。"""
 
     finished: Signal = Signal(str, bool)  # message, success
 
-    def __init__(self, base_url: str, api_key: str, model_name: str) -> None:
+    def __init__(self, base_url: str, api_key: str, model_name: str, image_bytes: bytes) -> None:
         super().__init__()
         self._base_url = base_url
         self._api_key = api_key
         self._model_name = model_name
+        self._image_bytes = image_bytes
 
     def run(self) -> None:
         try:
-            client = ArkVisionClient(timeout_seconds=15)
-            client.test_connection(
+            client = ArkVisionClient(timeout_seconds=30)
+            result = client.analyze_image(
+                image_bytes=self._image_bytes,
+                prompt=VISION_DECISION_PROMPT,
                 base_url=self._base_url,
                 api_key=self._api_key,
                 model_name=self._model_name,
             )
-            self.finished.emit('✓ 连接成功，模型已响应', True)
+            self.finished.emit(f'✓ {result}', True)
         except Exception as exc:
-            self.finished.emit(f'✗ 连接失败：{exc}', False)
+            self.finished.emit(f'✗ 识别失败：{exc}', False)
 
 
 class SettingsDialog(QDialog):
@@ -47,7 +52,7 @@ class SettingsDialog(QDialog):
         self.settings_repository = settings_repository
         self.autostart_service = autostart_service
         self._test_thread: QThread | None = None
-        self._test_worker: _ModelTestWorker | None = None
+        self._test_worker: _ImageTestWorker | None = None
         self.setWindowTitle('系统设置')
         self.resize(520, 600)
         self._build_ui()
@@ -87,11 +92,11 @@ class SettingsDialog(QDialog):
         form_layout.addRow('Ark API Key', self.ark_api_key_input)
         form_layout.addRow('Ark 模型名', self.ark_model_name_input)
 
-        # 大模型连接测试
+        # 大模型图片识别测试
         test_layout = QHBoxLayout()
-        self._test_button = QPushButton('测试连接', self)
+        self._test_button = QPushButton('选图测试', self)
         self._test_button.setObjectName('modelTestButton')
-        self._test_button.clicked.connect(self._run_connection_test)
+        self._test_button.clicked.connect(self._run_image_test)
         self._test_status_label = QLabel('', self)
         self._test_status_label.setObjectName('modelTestStatusLabel')
         self._test_status_label.setTextInteractionFlags(
@@ -106,28 +111,31 @@ class SettingsDialog(QDialog):
         self.dnd_enabled_checkbox = QCheckBox('启用勿扰', self)
         self.dnd_enabled_checkbox.setObjectName('dndEnabledCheckbox')
 
-        day_names = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-        self.dnd_day_checkboxes: list[QCheckBox] = []
-        days_layout = QHBoxLayout()
-        for i, name in enumerate(day_names):
-            cb = QCheckBox(name, self)
-            cb.setObjectName(f'dndDayCheckbox{i}')
-            self.dnd_day_checkboxes.append(cb)
-            days_layout.addWidget(cb)
-        days_layout.addStretch(1)
+        weekday_layout = QHBoxLayout()
+        weekday_layout.addWidget(QLabel('工作日（周一至周五）', self))
+        self.dnd_weekday_start_edit = QTimeEdit(self)
+        self.dnd_weekday_start_edit.setObjectName('dndWeekdayStartEdit')
+        self.dnd_weekday_start_edit.setDisplayFormat('HH:mm')
+        weekday_layout.addWidget(self.dnd_weekday_start_edit)
+        weekday_layout.addWidget(QLabel('至', self))
+        self.dnd_weekday_end_edit = QTimeEdit(self)
+        self.dnd_weekday_end_edit.setObjectName('dndWeekdayEndEdit')
+        self.dnd_weekday_end_edit.setDisplayFormat('HH:mm')
+        weekday_layout.addWidget(self.dnd_weekday_end_edit)
+        weekday_layout.addStretch(1)
 
-        time_layout = QHBoxLayout()
-        time_layout.addWidget(QLabel('勿扰时间：', self))
-        self.dnd_start_time_edit = QTimeEdit(self)
-        self.dnd_start_time_edit.setObjectName('dndStartTimeEdit')
-        self.dnd_start_time_edit.setDisplayFormat('HH:mm')
-        time_layout.addWidget(self.dnd_start_time_edit)
-        time_layout.addWidget(QLabel('至', self))
-        self.dnd_end_time_edit = QTimeEdit(self)
-        self.dnd_end_time_edit.setObjectName('dndEndTimeEdit')
-        self.dnd_end_time_edit.setDisplayFormat('HH:mm')
-        time_layout.addWidget(self.dnd_end_time_edit)
-        time_layout.addStretch(1)
+        weekend_layout = QHBoxLayout()
+        weekend_layout.addWidget(QLabel('周末（周六至周日）', self))
+        self.dnd_weekend_start_edit = QTimeEdit(self)
+        self.dnd_weekend_start_edit.setObjectName('dndWeekendStartEdit')
+        self.dnd_weekend_start_edit.setDisplayFormat('HH:mm')
+        weekend_layout.addWidget(self.dnd_weekend_start_edit)
+        weekend_layout.addWidget(QLabel('至', self))
+        self.dnd_weekend_end_edit = QTimeEdit(self)
+        self.dnd_weekend_end_edit.setObjectName('dndWeekendEndEdit')
+        self.dnd_weekend_end_edit.setDisplayFormat('HH:mm')
+        weekend_layout.addWidget(self.dnd_weekend_end_edit)
+        weekend_layout.addStretch(1)
 
         dnd_desc_label = QLabel(
             '在勿扰时段内，运行中的提醒将自动重置；退出后自动恢复。', self
@@ -162,8 +170,8 @@ class SettingsDialog(QDialog):
         root_layout.addWidget(dnd_separator)
         root_layout.addSpacing(4)
         root_layout.addWidget(self.dnd_enabled_checkbox)
-        root_layout.addLayout(days_layout)
-        root_layout.addLayout(time_layout)
+        root_layout.addLayout(weekday_layout)
+        root_layout.addLayout(weekend_layout)
         root_layout.addWidget(dnd_desc_label)
         root_layout.addWidget(self.error_label)
         root_layout.addStretch(1)
@@ -177,17 +185,20 @@ class SettingsDialog(QDialog):
         self.ark_api_key_input.setText(settings.ark_api_key)
         self.ark_model_name_input.setText(settings.ark_model_name)
         self.dnd_enabled_checkbox.setChecked(settings.dnd_enabled)
-        for i, cb in enumerate(self.dnd_day_checkboxes):
-            cb.setChecked(i in settings.dnd_days)
         try:
-            sh, sm = map(int, settings.dnd_start_time.split(':'))
-            eh, em = map(int, settings.dnd_end_time.split(':'))
+            wdsh, wdsm = map(int, settings.dnd_weekday_start_time.split(':'))
+            wdeh, wdem = map(int, settings.dnd_weekday_end_time.split(':'))
+            wesh, wesm = map(int, settings.dnd_weekend_start_time.split(':'))
+            weeh, weem = map(int, settings.dnd_weekend_end_time.split(':'))
         except (ValueError, AttributeError):
-            sh, sm, eh, em = 22, 0, 8, 0
-        self.dnd_start_time_edit.setTime(QTime(sh, sm))
-        self.dnd_end_time_edit.setTime(QTime(eh, em))
+            wdsh, wdsm, wdeh, wdem = 23, 0, 19, 0
+            wesh, wesm, weeh, weem = 23, 0, 9, 0
+        self.dnd_weekday_start_edit.setTime(QTime(wdsh, wdsm))
+        self.dnd_weekday_end_edit.setTime(QTime(wdeh, wdem))
+        self.dnd_weekend_start_edit.setTime(QTime(wesh, wesm))
+        self.dnd_weekend_end_edit.setTime(QTime(weeh, weem))
 
-    def _run_connection_test(self) -> None:
+    def _run_image_test(self) -> None:
         base_url = self.ark_base_url_input.text().strip()
         api_key = self.ark_api_key_input.text().strip()
         model_name = self.ark_model_name_input.text().strip()
@@ -197,12 +208,29 @@ class SettingsDialog(QDialog):
             self._test_status_label.setText('请先填写调用地址、API Key 和模型名')
             return
 
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            '选择测试图片',
+            '',
+            '图片文件 (*.png *.jpg *.jpeg *.bmp)',
+        )
+        if not path:
+            return
+
+        try:
+            with open(path, 'rb') as f:
+                image_bytes = f.read()
+        except OSError as exc:
+            self._test_status_label.setStyleSheet('color: #b42318;')
+            self._test_status_label.setText(f'✗ 读取图片失败：{exc}')
+            return
+
         self._test_button.setEnabled(False)
         self._test_status_label.setStyleSheet('color: #666666;')
-        self._test_status_label.setText('测试中…')
+        self._test_status_label.setText('识别中…')
 
         self._test_thread = QThread(self)
-        self._test_worker = _ModelTestWorker(base_url, api_key, model_name)
+        self._test_worker = _ImageTestWorker(base_url, api_key, model_name, image_bytes)
         self._test_worker.moveToThread(self._test_thread)
         self._test_thread.started.connect(self._test_worker.run)
         self._test_worker.finished.connect(self._on_test_finished)
@@ -229,9 +257,6 @@ class SettingsDialog(QDialog):
             launch_at_startup = self.autostart_checkbox.isChecked()
             auto_remind_on_launch = self.auto_remind_checkbox.isChecked()
             dnd_enabled = self.dnd_enabled_checkbox.isChecked()
-            dnd_days = [i for i, cb in enumerate(self.dnd_day_checkboxes) if cb.isChecked()]
-            dnd_start_time = self.dnd_start_time_edit.time().toString('HH:mm')
-            dnd_end_time = self.dnd_end_time_edit.time().toString('HH:mm')
             self.settings_repository.save(
                 AppSettings(
                     launch_at_startup=launch_at_startup,
@@ -240,9 +265,10 @@ class SettingsDialog(QDialog):
                     ark_api_key=self.ark_api_key_input.text().strip(),
                     ark_model_name=self.ark_model_name_input.text().strip(),
                     dnd_enabled=dnd_enabled,
-                    dnd_days=dnd_days,
-                    dnd_start_time=dnd_start_time,
-                    dnd_end_time=dnd_end_time,
+                    dnd_weekday_start_time=self.dnd_weekday_start_edit.time().toString('HH:mm'),
+                    dnd_weekday_end_time=self.dnd_weekday_end_edit.time().toString('HH:mm'),
+                    dnd_weekend_start_time=self.dnd_weekend_start_edit.time().toString('HH:mm'),
+                    dnd_weekend_end_time=self.dnd_weekend_end_edit.time().toString('HH:mm'),
                 )
             )
             if launch_at_startup:

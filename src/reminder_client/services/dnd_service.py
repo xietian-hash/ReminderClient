@@ -11,22 +11,20 @@ class DndService:
         if not settings.dnd_enabled:
             return False
 
-        no_days = not settings.dnd_days
-        no_time = not settings.dnd_start_time or not settings.dnd_end_time
-        if no_days and no_time:
+        now = datetime.now()
+        is_weekend = now.weekday() >= 5  # 5=Saturday, 6=Sunday
+
+        if is_weekend:
+            start = settings.dnd_weekend_start_time
+            end = settings.dnd_weekend_end_time
+        else:
+            start = settings.dnd_weekday_start_time
+            end = settings.dnd_weekday_end_time
+
+        if not start or not end:
             return False
 
-        now = datetime.now()
-
-        if settings.dnd_days and now.weekday() in settings.dnd_days:
-            return True
-
-        if settings.dnd_start_time and settings.dnd_end_time:
-            return self._is_time_in_range(
-                settings.dnd_start_time, settings.dnd_end_time, now.time()
-            )
-
-        return False
+        return self._is_time_in_range(start, end, now.time())
 
     def _is_time_in_range(self, start_str: str, end_str: str, current: Time) -> bool:
         try:

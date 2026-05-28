@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: reminder-client
-Version: 0.1.0
+Version: 0.1.12
 Summary: Windows 定时提醒客户端
 Requires-Python: >=3.11
 Description-Content-Type: text/markdown
@@ -29,8 +29,8 @@ Requires-Dist: pyinstaller<7,>=6.0; extra == "build"
 
 ## 环境要求
 
-- Python 3.11 或更高版本
 - Windows 系统
+- Python 3.11 或更高版本
 
 ## 安装依赖
 
@@ -56,12 +56,29 @@ python -m reminder_client.main
 
 ```bash
 python -m pytest tests -q
-python -m compileall src
+python -m compileall src scripts
 ```
 
-## 打包说明
+## 图标资源
 
-安装 `PyInstaller` 后，在项目根目录执行：
+项目包含以下图标资源：
+
+```text
+assets\app_icon.svg
+assets\app_icon.png
+assets\app_icon.ico
+```
+
+说明：
+
+- `app_icon.svg` 为设计源文件
+- `app_icon.png` 用于文档预览与通用位图场景
+- `app_icon.ico` 用于 Windows 应用图标、托盘图标和 `exe` 打包图标
+- `scripts\generate_app_icon.py` 可根据 `svg` 生成 `png` 与多尺寸 `ico`
+
+## 打包
+
+执行：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\build_windows.ps1 -Clean

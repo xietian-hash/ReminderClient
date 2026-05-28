@@ -104,20 +104,26 @@ class Database:
             self._ensure_column(
                 connection,
                 table_name='app_settings',
-                column_name='dnd_days',
-                column_definition="TEXT NOT NULL DEFAULT ''",
+                column_name='dnd_weekday_start_time',
+                column_definition="TEXT NOT NULL DEFAULT '23:00'",
             )
             self._ensure_column(
                 connection,
                 table_name='app_settings',
-                column_name='dnd_start_time',
-                column_definition="TEXT NOT NULL DEFAULT '22:00'",
+                column_name='dnd_weekday_end_time',
+                column_definition="TEXT NOT NULL DEFAULT '19:00'",
             )
             self._ensure_column(
                 connection,
                 table_name='app_settings',
-                column_name='dnd_end_time',
-                column_definition="TEXT NOT NULL DEFAULT '08:00'",
+                column_name='dnd_weekend_start_time',
+                column_definition="TEXT NOT NULL DEFAULT '23:00'",
+            )
+            self._ensure_column(
+                connection,
+                table_name='app_settings',
+                column_name='dnd_weekend_end_time',
+                column_definition="TEXT NOT NULL DEFAULT '09:00'",
             )
             self._ensure_column(
                 connection,

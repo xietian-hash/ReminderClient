@@ -81,9 +81,10 @@ class AppSettings:
     ark_api_key: str = ''
     ark_model_name: str = 'doubao-seed-2-0-mini-260215'
     dnd_enabled: bool = False
-    dnd_days: list[int] = field(default_factory=list)
-    dnd_start_time: str = '22:00'
-    dnd_end_time: str = '08:00'
+    dnd_weekday_start_time: str = '23:00'
+    dnd_weekday_end_time: str = '19:00'
+    dnd_weekend_start_time: str = '23:00'
+    dnd_weekend_end_time: str = '09:00'
     updated_at: datetime = field(default_factory=_now)
 
 
