@@ -29,3 +29,8 @@ python -m PyInstaller `
     --hidden-import PySide6.QtWidgets `
     --hidden-import PySide6.QtMultimedia `
     src\reminder_client\main.py
+
+$zipPath = Join-Path $projectRoot 'dist\ReminderClient.zip'
+if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+Compress-Archive -Path (Join-Path $projectRoot 'dist\ReminderClient') -DestinationPath $zipPath
+Write-Host "打包完成：$zipPath"

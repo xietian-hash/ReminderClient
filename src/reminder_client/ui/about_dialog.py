@@ -15,6 +15,9 @@ from reminder_client.resources import resolve_wechat_official_qr_path, resolve_w
 
 
 _CHANGELOG = """
+v0.1.15（2026-06-11）
+  · dist/ 移出 git 仓库，打包脚本自动生成 zip，通过 GitHub Release 分发
+
 v0.1.14（2026-06-11）
   · 新增项目 AI 开发规则（CLAUDE.md），要求每次提交前同步四处版本号及更新日志
   · 补全 AI-PRD.md 版本历史表（v0.1.8 ~ v0.1.13）
