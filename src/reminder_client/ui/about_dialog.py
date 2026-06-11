@@ -11,18 +11,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from reminder_client.resources import resolve_wechat_official_qr_path, resolve_wechat_qr_path
-
+from reminder_client.resources import (
+    resolve_wechat_official_qr_path,
+    resolve_wechat_qr_path,
+)
 
 _CHANGELOG = """
-v0.1.15（2026-06-11）
-  · dist/ 移出 git 仓库，打包脚本自动生成 zip，通过 GitHub Release 分发
-
-v0.1.14（2026-06-11）
-  · 新增项目 AI 开发规则（CLAUDE.md），要求每次提交前同步四处版本号及更新日志
-  · 补全 AI-PRD.md 版本历史表（v0.1.8 ~ v0.1.13）
-  · 修正程序内部版本号长期未同步的问题（0.1.0 → 0.1.14）
-
 v0.1.13（2026-05-28）
   · 大模型接口改回 OpenAI 兼容格式（/chat/completions），兼容更多第三方模型服务
   · 勿扰功能重构：工作日与周末分别设置勿扰时段，取消按星期几单独勾选
@@ -92,7 +86,7 @@ _QR_SIZE = 150
 class AboutDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self.setWindowTitle('关于')
+        self.setWindowTitle("关于")
         self.resize(520, 520)
         self._build_ui()
 
@@ -101,8 +95,8 @@ class AboutDialog(QDialog):
         root_layout.setSpacing(12)
 
         # 更新日志
-        log_label = QLabel('版本更新日志', self)
-        log_label.setStyleSheet('font-weight: bold;')
+        log_label = QLabel("版本更新日志", self)
+        log_label.setStyleSheet("font-weight: bold;")
         root_layout.addWidget(log_label)
 
         scroll = QScrollArea(self)
@@ -118,22 +112,26 @@ class AboutDialog(QDialog):
         # 分隔
         sep = QLabel(self)
         sep.setFixedHeight(1)
-        sep.setStyleSheet('background: #e0e0e0;')
+        sep.setStyleSheet("background: #e0e0e0;")
         root_layout.addWidget(sep)
 
         # 二维码区域：个人微信 + 公众号并排
         qr_section = QHBoxLayout()
         qr_section.setSpacing(24)
         qr_section.addStretch(1)
-        qr_section.addLayout(self._build_qr_block(
-            resolve_wechat_qr_path(),
-            '个人微信\n扫码添加好友',
-        ))
+        qr_section.addLayout(
+            self._build_qr_block(
+                resolve_wechat_qr_path(),
+                "个人微信\n扫码添加好友",
+            )
+        )
         qr_section.addStretch(1)
-        qr_section.addLayout(self._build_qr_block(
-            resolve_wechat_official_qr_path(),
-            '微信公众号\n扫码关注',
-        ))
+        qr_section.addLayout(
+            self._build_qr_block(
+                resolve_wechat_official_qr_path(),
+                "微信公众号\n扫码关注",
+            )
+        )
         qr_section.addStretch(1)
         root_layout.addLayout(qr_section)
 
@@ -142,8 +140,8 @@ class AboutDialog(QDialog):
         # 关闭按钮
         btn_layout = QHBoxLayout()
         btn_layout.addStretch(1)
-        close_btn = QPushButton('关闭', self)
-        close_btn.setObjectName('closeButton')
+        close_btn = QPushButton("关闭", self)
+        close_btn.setObjectName("closeButton")
         close_btn.clicked.connect(self.accept)
         btn_layout.addWidget(close_btn)
         root_layout.addLayout(btn_layout)
@@ -155,13 +153,14 @@ class AboutDialog(QDialog):
         qr_label = QLabel(self)
         if qr_path.exists():
             pixmap = QPixmap(str(qr_path)).scaled(
-                _QR_SIZE, _QR_SIZE,
+                _QR_SIZE,
+                _QR_SIZE,
                 Qt.AspectRatioMode.KeepAspectRatio,
                 Qt.TransformationMode.SmoothTransformation,
             )
             qr_label.setPixmap(pixmap)
         else:
-            qr_label.setText('[图片未找到]')
+            qr_label.setText("[图片未找到]")
         qr_label.setFixedSize(_QR_SIZE, _QR_SIZE)
         qr_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
