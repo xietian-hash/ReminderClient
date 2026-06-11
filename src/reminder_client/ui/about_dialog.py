@@ -15,6 +15,16 @@ from reminder_client.resources import resolve_wechat_official_qr_path, resolve_w
 
 
 _CHANGELOG = """
+v0.1.14（2026-06-11）
+  · 新增项目 AI 开发规则（CLAUDE.md），要求每次提交前同步四处版本号及更新日志
+  · 补全 AI-PRD.md 版本历史表（v0.1.8 ~ v0.1.13）
+  · 修正程序内部版本号长期未同步的问题（0.1.0 → 0.1.14）
+
+v0.1.13（2026-05-28）
+  · 大模型接口改回 OpenAI 兼容格式（/chat/completions），兼容更多第三方模型服务
+  · 勿扰功能重构：工作日与周末分别设置勿扰时段，取消按星期几单独勾选
+  · 设置界面「测试连接」改为「选图测试」，支持选本地图片直接测试视觉识别效果
+
 v0.1.12（2026-05-27）
   · 大模型接口切换为 Ark 原生格式（/responses），支持视觉识别模型
   · 请求体改用 input/input_image/input_text 字段，移除不兼容的 max_tokens 参数

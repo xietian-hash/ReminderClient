@@ -7,6 +7,7 @@
 1. **`pyproject.toml`** — `version` 字段
 2. **`src/reminder_client/__init__.py`** — `__version__` 字段
 3. **`.document/AI-PRD.md`** — "一、版本信息"表格，在最顶部新增一行，填写本次变更内容
+4. **`src/reminder_client/ui/about_dialog.py`** — `_CHANGELOG` 字符串，在最顶部新增一段，格式与已有条目保持一致
 
 版本号递增规则：
 - 小功能新增或 bug 修复 → 递增第三位（如 0.1.13 → 0.1.14）
